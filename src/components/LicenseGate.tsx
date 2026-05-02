@@ -23,59 +23,60 @@ export default function LicenseGate({
   error,
 }: LicenseGateProps) {
   return (
-    <div className="min-h-screen bg-app px-4 py-8">
-      <div className="mx-auto max-w-lg">
-        <Card className="surface-card border-border/70">
-          <CardContent className="space-y-4 p-5">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                License Required
-              </p>
-              <h1 className="mt-1 font-display text-2xl font-bold">Activate UG Live BulkSMS</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Sign in with your customer account to unlock this app on this device.
-              </p>
+    <div className="min-h-screen bg-background px-6 py-12 flex flex-col justify-center">
+      <div className="mx-auto w-full max-w-sm">
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[24px] bg-primary/10">
+            <Lock className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Sign In</h1>
+          <p className="mt-2 text-sm font-medium text-muted-foreground">
+            Activate your BulkSMS license.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="email"
+                value={email}
+                onChange={(event) => onEmailChange(event.target.value)}
+                className="h-14 pl-12 rounded-[24px] bg-secondary border-0 text-[15px] font-medium shadow-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                placeholder="Email address"
+              />
             </div>
-
-            <div className="space-y-3">
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(event) => onEmailChange(event.target.value)}
-                  className="pl-9"
-                  placeholder="Email"
-                />
-              </div>
-              <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(event) => onPasswordChange(event.target.value)}
-                  className="pl-9"
-                  placeholder="Password"
-                />
-              </div>
+            <div className="relative">
+              <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="password"
+                value={password}
+                onChange={(event) => onPasswordChange(event.target.value)}
+                className="h-14 pl-12 rounded-[24px] bg-secondary border-0 text-[15px] font-medium shadow-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                placeholder="Password"
+              />
             </div>
+          </div>
 
-            {error && (
-              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {error}
-              </p>
-            )}
-
-            <Button className="w-full gap-2" onClick={onActivate} disabled={activating}>
-              <Lock className="h-4 w-4" />
-              {activating ? 'Activating...' : 'Activate Device'}
-            </Button>
-
-            <p className="text-center text-xs text-muted-foreground">
-              Need access? Contact <a className="underline" href="mailto:2humpyt@gmail.com">2humpyt@gmail.com</a>
+          {error && (
+            <p className="rounded-[16px] border border-destructive/20 bg-destructive/10 px-4 py-3 text-center text-xs font-bold text-destructive">
+              {error}
             </p>
-          </CardContent>
-        </Card>
+          )}
+
+          <button
+            className="w-full h-14 rounded-[24px] bg-primary text-primary-foreground font-bold text-[15px] hover:bg-primary/90 transition-colors flex items-center justify-center disabled:opacity-50"
+            onClick={onActivate}
+            disabled={activating}
+          >
+            {activating ? 'Signing in...' : 'Sign In'}
+          </button>
+
+          <p className="mt-8 text-center text-[13px] font-semibold text-muted-foreground">
+            Need access? <a className="text-foreground hover:text-primary transition-colors underline decoration-border underline-offset-4" href="mailto:2humpyt@gmail.com">Contact Support</a>
+          </p>
+        </div>
       </div>
     </div>
   );
