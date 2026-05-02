@@ -319,14 +319,14 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
   return (
     <PullToRefresh onRefresh={async () => await new Promise((resolve) => setTimeout(resolve, 600))}>
       <div className="px-4 pb-20 pt-2">
-        <section className="mb-4 overflow-hidden rounded-[1.75rem] border border-border/70 bg-card px-4 py-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(8,15,28,0.92))] dark:shadow-[0_24px_60px_rgba(2,6,23,0.32)]">
+        <section className="mb-4 overflow-hidden rounded-[28px] border border-border bg-card px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground dark:text-sky-200/70">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Audience Desk
               </p>
-              <h1 className="mt-1 text-2xl font-display font-bold dark:text-slate-50">{t('contacts', lang)}</h1>
-              <p className="mt-1 max-w-[16rem] text-sm text-muted-foreground dark:text-slate-300">
+              <h1 className="mt-1 text-2xl font-display font-bold">{t('contacts', lang)}</h1>
+              <p className="mt-1 max-w-[18rem] text-sm text-muted-foreground">
                 Import, segment, and maintain the audience behind every campaign.
               </p>
             </div>
@@ -334,7 +334,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                className=""
                 onClick={exportCSV}
                 disabled={contacts.length === 0}
               >
@@ -343,7 +343,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+                className="gap-1.5"
                 onClick={() => setImportDialogOpen(true)}
               >
                 <Upload className="h-4 w-4" />
@@ -372,7 +372,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 gap-1.5 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
+            className="flex-1 gap-1.5"
             onClick={openNewGroup}
           >
             <Users className="h-4 w-4" />
@@ -385,7 +385,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 grid w-full grid-cols-2 rounded-2xl bg-muted/50 dark:bg-white/[0.04]">
+          <TabsList className="mb-4 grid w-full grid-cols-2 rounded-2xl bg-muted/50">
             <TabsTrigger value="contacts" className="rounded-xl">
               {t('allContacts', lang)}
             </TabsTrigger>
@@ -398,7 +398,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
             <div className="space-y-2">
               <AnimatePresence>
                 {filtered.length === 0 ? (
-                  <Card className="border-dashed dark:border-white/10">
+                  <Card className="border-dashed">
                     <CardContent className="py-12 text-center text-muted-foreground">
                       <Users className="mx-auto mb-3 h-12 w-12 opacity-40" />
                       <p className="text-sm">{t('noContacts', lang)}</p>
@@ -414,14 +414,14 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     >
                       <SwipeToDelete onDelete={() => deleteContact(contact.id!)}>
-                        <Card className={`overflow-hidden dark:border-white/10 ${contact.optedOut ? 'opacity-60' : ''}`}>
+                        <Card className={`overflow-hidden ${contact.optedOut ? 'opacity-60' : ''}`}>
                           <CardContent className="p-2.5">
                             <div className="flex items-center justify-between gap-2">
                               <div
                                 className="min-w-0 flex flex-1 items-center gap-2.5"
                                 onClick={() => openEditContact(contact)}
                               >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-[11px] font-semibold text-primary dark:bg-sky-400/10 dark:text-sky-200">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-[11px] font-semibold text-primary">
                                   {contact.name
                                     .split(' ')
                                     .slice(0, 2)
@@ -430,20 +430,20 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5">
-                                    <p className="truncate text-sm font-medium dark:text-slate-100">{contact.name}</p>
+                                    <p className="truncate text-sm font-medium">{contact.name}</p>
                                     {contact.optedOut && (
                                       <Badge variant="destructive" className="px-1.5 py-0 text-[10px]">
                                         {t('optedOut', lang)}
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground dark:text-slate-400">
+                                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
                                     <Phone className="h-3 w-3" />
                                     {contact.phone}
                                   </p>
                                   <div className="mt-1 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-1">
                                     {contact.location && (
-                                      <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-secondary/45 px-2 py-0.5 text-[10px] text-muted-foreground dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                                      <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-secondary/45 px-2 py-0.5 text-[10px] text-muted-foreground">
                                         <MapPin className="h-2.5 w-2.5" />
                                         {contact.location}
                                       </span>
@@ -452,7 +452,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                                       <Badge
                                         key={tag}
                                         variant="secondary"
-                                        className="inline-flex items-center gap-1 px-1.5 py-0 text-[10px] dark:bg-white/[0.06] dark:text-slate-300"
+                                        className="inline-flex items-center gap-1 px-1.5 py-0 text-[10px]"
                                       >
                                         <Tag className="h-2.5 w-2.5" />
                                         {tag}
@@ -461,7 +461,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                                     {contact.tags.length > 2 && (
                                       <Badge
                                         variant="secondary"
-                                        className="px-1.5 py-0 text-[10px] dark:bg-white/[0.06] dark:text-slate-300"
+                                        className="px-1.5 py-0 text-[10px]"
                                       >
                                         +{contact.tags.length - 2}
                                       </Badge>
@@ -489,14 +489,14 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
           <TabsContent value="groups">
             <div className="space-y-2">
               {groups.length === 0 ? (
-                <Card className="border-dashed dark:border-white/10">
+                <Card className="border-dashed">
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <Users className="mx-auto mb-3 h-12 w-12 opacity-40" />
                     <p className="text-sm">No groups yet</p>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-4 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
+                      className="mt-4"
                       onClick={openNewGroup}
                     >
                       {t('createGroup', lang)}
@@ -507,58 +507,58 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                 groups.map((group) => {
                   const memberCount = contacts.filter((contact) => contact.groupIds.includes(group.id!)).length;
                   return (
-                    <Card key={group.id} className="dark:border-white/10">
+                    <Card key={group.id}>
                       <CardContent className="flex items-center justify-between p-3">
                         <div className="flex items-center gap-3">
                           <div className="h-4 w-4 rounded-full" style={{ backgroundColor: group.color }} />
                           <div>
-                            <p className="text-sm font-medium dark:text-slate-100">{group.name}</p>
-                            <p className="text-xs text-muted-foreground dark:text-slate-400">{memberCount} contacts</p>
+                            <p className="text-sm font-medium">{group.name}</p>
+                            <p className="text-xs text-muted-foreground">{memberCount} contacts</p>
                           </div>
                         </div>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-xs dark:hover:bg-white/[0.06]"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => openAddExistingToGroup(group)}
+                            title="Add contacts"
+                            aria-label="Add contacts"
                           >
-                            Add Contacts
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-xs dark:hover:bg-white/[0.06]"
-                            onClick={() => openCsvImportToGroup(group)}
-                          >
-                            CSV
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 text-xs dark:hover:bg-white/[0.06]"
-                            onClick={() => openGroupMembers(group)}
-                          >
-                            Manage
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 dark:hover:bg-white/[0.06]"
+                            className="h-8 w-8"
+                            onClick={() => openCsvImportToGroup(group)}
+                            title="Import CSV"
+                            aria-label="Import CSV"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => {
                               setEditingGroup(group);
                               setGroupName(group.name);
                               setGroupColor(group.color);
                               setGroupDialogOpen(true);
                             }}
+                            title="Edit group"
+                            aria-label="Edit group"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive dark:hover:bg-destructive/10"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
                             onClick={() => deleteGroup(group.id!)}
+                            title="Delete group"
+                            aria-label="Delete group"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -615,7 +615,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                           formGroupIds.includes(group.id!)
                             ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-secondary text-secondary-foreground dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300'
+                            : 'border-border bg-secondary text-secondary-foreground'
                         }`}
                       >
                         {group.name}
@@ -857,8 +857,8 @@ function StatPill({
 }) {
   const toneClass =
     tone === 'warning'
-      ? 'border-warning/20 bg-warning/10 text-warning dark:border-amber-300/15 dark:bg-amber-400/10 dark:text-amber-200'
-      : 'border-white/10 bg-white/5 text-slate-200';
+      ? 'border-warning/20 bg-warning/10 text-warning'
+      : 'border-border bg-muted text-foreground';
 
   return (
     <div className={`rounded-2xl border px-3 py-2 ${toneClass}`}>

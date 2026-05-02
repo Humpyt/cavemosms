@@ -19,9 +19,9 @@ const tabs: { id: TabId; icon: LucideIcon; labelKey: string }[] = [
 
 export default function BottomNav({ activeTab, onTabChange, lang }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 safe-bottom">
-      <div className="surface-floating mx-auto max-w-lg rounded-[24px] border backdrop-blur-xl">
-        <div className="flex h-[72px] w-full items-center justify-around px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom">
+      <div className="mx-auto max-w-lg border-t border-border bg-background/95 backdrop-blur">
+        <div className="flex h-[64px] w-full items-center justify-around px-2">
           {tabs.map(({ id, icon: Icon, labelKey }) => {
             const isActive = activeTab === id;
             return (
@@ -33,7 +33,7 @@ export default function BottomNav({ activeTab, onTabChange, lang }: BottomNavPro
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-x-2 inset-y-2 rounded-2xl bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:bg-primary/18"
+                    className="absolute inset-x-2 inset-y-2 rounded-2xl bg-muted"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}

@@ -119,7 +119,9 @@ function AppContent() {
                 {activeTab === 'messages' && <MessagesPage lang={lang} />}
                 {activeTab === 'contacts' && <ContactsPage lang={lang} />}
                 {activeTab === 'templates' && <TemplatesPage lang={lang} />}
-                {activeTab === 'analytics' && <AnalyticsPage lang={lang} />}
+                {activeTab === 'analytics' && (
+                  <AnalyticsPage lang={lang} settings={settings} onUpdate={update} />
+                )}
                 {activeTab === 'settings' && (
                   <SettingsPage lang={lang} settings={settings} onUpdate={update} onLogout={license.logout} />
                 )}

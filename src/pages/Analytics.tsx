@@ -24,13 +24,16 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNativeSms } from '@/hooks/useNativeSms';
+import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/db';
 import { exportAnalyticsReport, exportBatchDetails } from '@/lib/csvExport';
 import { t } from '@/lib/i18n';
-import type { MessageBatch, MessageLog } from '@/lib/types';
+import type { AppSettings, MessageBatch, MessageLog } from '@/lib/types';
 
 interface AnalyticsPageProps {
   lang: string;
+  settings: AppSettings;
+  onUpdate: (updates: Partial<AppSettings>) => Promise<void> | void;
 }
 
 const SENDING_STALE_TIMEOUT_MS = 120_000;
@@ -44,7 +47,7 @@ function isStaleSending(log: MessageLog): boolean {
   return Date.now() - new Date(log.lastAttemptAt).getTime() > SENDING_STALE_TIMEOUT_MS;
 }
 
-export default function AnalyticsPage({ lang }: AnalyticsPageProps) {
+export default function AnalyticsPage({ lang, settings, onUpdate }: AnalyticsPageProps) {
   const batchesQuery = useLiveQuery(() => db.batches.orderBy('createdAt').reverse().toArray());
   const logsQuery = useLiveQuery(() => db.messageLogs.toArray());
   const batches = useMemo(() => batchesQuery ?? [], [batchesQuery]);
@@ -180,7 +183,7 @@ export default function AnalyticsPage({ lang }: AnalyticsPageProps) {
       <div className="px-4 pb-20 pt-2">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-display font-bold">{t('analytics', lang)}</h1>
-          <ThemeToggle />
+          <ThemeToggle settings={settings} onUpdate={onUpdate} />
         </div>
         <StatCardsSkeleton />
         <BatchListSkeleton count={5} />
@@ -201,7 +204,7 @@ export default function AnalyticsPage({ lang }: AnalyticsPageProps) {
               Read delivery outcomes, inspect failed runs, and export campaign evidence.
             </p>
           </div>
-          <ThemeToggle />
+          <ThemeToggle settings={settings} onUpdate={onUpdate} />
         </div>
       </section>
 
@@ -251,7 +254,14 @@ export default function AnalyticsPage({ lang }: AnalyticsPageProps) {
             size="sm"
             variant="outline"
             className="h-7 gap-1 text-[10px] dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
-            onClick={() => exportAnalyticsReport(batches)}
+            onClick={async () => {
+              try {
+                await exportAnalyticsReport(batches);
+                toast({ title: 'Export started', description: 'Analytics CSV is being prepared.' });
+              } catch {
+                toast({ title: 'Export failed', description: 'Could not export analytics CSV.' });
+              }
+            }}
           >
             <Download className="h-3 w-3" />
             Export CSV
@@ -456,7 +466,15 @@ export default function AnalyticsPage({ lang }: AnalyticsPageProps) {
               size="sm"
               variant="outline"
               className="gap-1 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
-              onClick={() => selectedBatch && exportBatchDetails(selectedBatch, batchLogs)}
+              onClick={async () => {
+                if (!selectedBatch) return;
+                try {
+                  await exportBatchDetails(selectedBatch, batchLogs);
+                  toast({ title: 'Export started', description: 'Batch CSV is being prepared.' });
+                } catch {
+                  toast({ title: 'Export failed', description: 'Could not export batch CSV.' });
+                }
+              }}
             >
               <Download className="h-3.5 w-3.5" />
               Export

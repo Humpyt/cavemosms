@@ -135,21 +135,21 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
   return (
     <PullToRefresh onRefresh={processQueueNow}>
       <div className="px-4 pb-28 pt-4">
-        <section className="mb-4 overflow-hidden rounded-[1.75rem] border border-border/70 bg-card px-4 py-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(8,15,28,0.92))] dark:shadow-[0_24px_60px_rgba(2,6,23,0.32)]">
+        <section className="mb-4 overflow-hidden rounded-[28px] border border-border bg-card px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground dark:text-sky-200/70">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 Dispatch Center
               </p>
-              <h2 className="mt-1 text-2xl font-display font-bold dark:text-slate-50">{t('messages', lang)}</h2>
-              <p className="mt-1 max-w-[16rem] text-sm text-muted-foreground dark:text-slate-300">
+              <h2 className="mt-1 text-2xl font-display font-bold">{t('messages', lang)}</h2>
+              <p className="mt-1 max-w-[18rem] text-sm text-muted-foreground">
                 Compose campaigns and send directly from this Android phone.
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+              className="gap-1.5"
               onClick={() => void processQueueNow()}
             >
               <TimerReset className="h-4 w-4" />
@@ -158,13 +158,13 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
           </div>
 
           <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-            <Badge className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] text-primary dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200">
+            <Badge className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] text-primary">
               Android native SMS
             </Badge>
-            <Badge className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] text-muted-foreground dark:text-slate-300">
+            <Badge className="rounded-full border border-border bg-muted px-3 py-1 text-[10px] text-muted-foreground">
               {canSend ? 'Ready to send' : 'Permission needed'}
             </Badge>
-            <Badge className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] text-muted-foreground dark:text-slate-300">
+            <Badge className="rounded-full border border-border bg-muted px-3 py-1 text-[10px] text-muted-foreground">
               {queuedCount} queued
             </Badge>
           </div>
@@ -181,8 +181,8 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
           />
         </div>
 
-        <Card className="mb-5 overflow-hidden border-border/70 shadow-sm dark:border-white/10">
-          <CardHeader className="space-y-1 border-b border-border/60 bg-muted/30 pb-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <Card className="mb-5 overflow-hidden border-border">
+          <CardHeader className="space-y-1 border-b border-border bg-muted/30 pb-4">
             <CardTitle className="text-base font-display">Compose Campaign</CardTitle>
             <p className="text-xs text-muted-foreground">
               Pick recipients, write your message, then send now or schedule it.
@@ -190,20 +190,20 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
           </CardHeader>
           <CardContent className="space-y-4 p-4">
             {serviceStatus === 'unsupported' && (
-              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-xs text-destructive dark:bg-destructive/12">
+              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-xs text-destructive">
                 This device does not expose Android SMS sending to the app.
               </div>
             )}
 
             {serviceStatus !== 'unsupported' && !canSend && (
-              <div className="rounded-2xl border border-warning/30 bg-warning/10 px-3 py-3 text-xs text-warning dark:bg-amber-400/10 dark:text-amber-200">
+              <div className="rounded-2xl border border-warning/30 bg-warning/10 px-3 py-3 text-xs text-warning">
                 <p>Grant SMS permission before sending.</p>
                 {error && <p className="mt-1 text-[11px]">{error}</p>}
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="mt-2 h-8 text-[11px] dark:border-amber-300/20 dark:bg-white/5 dark:text-amber-100 dark:hover:bg-white/10"
+                  className="mt-2 h-8 text-[11px]"
                   onClick={() => void requestSmsPermission()}
                 >
                   Allow SMS
@@ -212,7 +212,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
             )}
 
             {canSend && (
-              <div className="rounded-2xl border border-success/30 bg-success/10 px-3 py-3 text-xs text-success dark:bg-emerald-400/10 dark:text-emerald-200">
+              <div className="rounded-2xl border border-success/30 bg-success/10 px-3 py-3 text-xs text-success">
                 Native SMS ready{capability.model ? ` on ${capability.model}` : ''}.
               </div>
             )}
@@ -220,7 +220,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
             <div className="space-y-2">
               <Button
                 variant="outline"
-                className="h-12 w-full justify-between rounded-2xl border-border/70 bg-background/70 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
+                className="h-12 w-full justify-between rounded-2xl border-border bg-background/70"
                 onClick={() => setRecipientDialogOpen(true)}
               >
                 <span className="flex items-center gap-2">
@@ -260,7 +260,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                 value={messageBody}
                 onChange={(event) => setMessageBody(event.target.value)}
                 placeholder={t('messageBody', lang)}
-                className="min-h-[180px] resize-none rounded-[1.35rem] border-border/70 bg-background/75 px-4 py-3 dark:border-white/10 dark:bg-slate-950/45"
+                className="min-h-[180px] resize-none rounded-[1.35rem] border-border bg-background/75 px-4 py-3"
               />
               <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
                 <span>
@@ -272,7 +272,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                       key={placeholder}
                       type="button"
                       onClick={() => insertPlaceholder(placeholder)}
-                      className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground dark:bg-white/8 dark:text-slate-200 dark:hover:bg-sky-500 dark:hover:text-white"
+                      className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
                     >
                       {`{${placeholder}}`}
                     </button>
@@ -290,7 +290,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                       key={template.id}
                       type="button"
                       onClick={() => setMessageBody(template.body)}
-                      className="shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-sky-400 dark:hover:text-sky-200"
+                      className="shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary"
                     >
                       {template.name}
                     </button>
@@ -299,10 +299,10 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
               </div>
             )}
 
-            <div className="rounded-[1.4rem] border border-border/70 bg-muted/20 p-3 dark:border-white/10 dark:bg-white/[0.04]">
+            <div className="rounded-[1.4rem] border border-border/70 bg-muted/20 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium dark:text-slate-100">Schedule</p>
+                  <p className="text-sm font-medium">Schedule</p>
                   <p className="text-xs text-muted-foreground">
                     {scheduleInFuture && scheduleDate
                       ? `Queued for ${format(scheduleDate, 'PPp')}`
@@ -312,7 +312,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1.5 dark:hover:bg-white/8"
+                  className="gap-1.5"
                   onClick={() => setShowSchedule((value) => !value)}
                 >
                   <Clock className="h-4 w-4" />
@@ -334,7 +334,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full justify-start gap-2 rounded-xl dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
+                            className="w-full justify-start gap-2 rounded-xl"
                           >
                             <CalendarIcon className="h-4 w-4" />
                             {scheduleDate ? format(scheduleDate, 'PPp') : 'Pick date and time'}
@@ -393,7 +393,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
+                className="flex-1"
                 onClick={clearComposer}
               >
                 Clear
@@ -401,7 +401,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
               <Button
                 onClick={() => void handleSend()}
                 disabled={sendDisabled}
-                className="flex-1 gap-1.5 shadow-[0_14px_36px_hsl(var(--primary)/0.22)] dark:shadow-[0_18px_40px_rgba(14,165,233,0.24)]"
+                className="flex-1 gap-1.5"
               >
                 {scheduleInFuture ? <Clock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 {scheduleInFuture ? t('schedule', lang) : t('send', lang)}
@@ -421,7 +421,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
           ) : (
             <div className="space-y-3">
               {safeBatches.length === 0 ? (
-                <Card className="border-dashed dark:border-white/10">
+                <Card className="border-dashed">
                   <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                     <MessageSquareIcon className="mb-3 h-12 w-12 opacity-40" />
                     <p className="text-sm">{t('noMessages', lang)}</p>
@@ -447,7 +447,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                     {safeGroups.map((group) => (
                       <label
                         key={group.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary dark:hover:bg-white/[0.06]"
+                        className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary"
                       >
                         <Checkbox
                           checked={selectedGroupIds.includes(group.id!)}
@@ -470,7 +470,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                 {activeContacts.map((contact) => (
                   <label
                     key={contact.id}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary dark:hover:bg-white/[0.06]"
+                    className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary"
                   >
                     <Checkbox
                       checked={selectedContactIds.includes(contact.id!)}
@@ -519,16 +519,16 @@ function InfoCard({
   icon: typeof Users;
 }) {
   return (
-    <Card className="border-border/70 shadow-sm dark:border-white/10">
+    <Card className="border-border/70">
       <CardContent className="p-3">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-muted-foreground dark:text-slate-400">{label}</span>
-          <div className="rounded-full bg-primary/10 p-1.5 dark:bg-sky-400/10">
-            <Icon className="h-3.5 w-3.5 text-primary dark:text-sky-300" />
+          <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+          <div className="rounded-full bg-primary/10 p-1.5">
+            <Icon className="h-3.5 w-3.5 text-primary" />
           </div>
         </div>
-        <p className="text-lg font-display font-bold dark:text-slate-50">{value}</p>
-        <p className="text-[10px] text-muted-foreground dark:text-slate-400">{helper}</p>
+        <p className="text-lg font-display font-bold">{value}</p>
+        <p className="text-[10px] text-muted-foreground">{helper}</p>
       </CardContent>
     </Card>
   );
@@ -551,12 +551,12 @@ function BatchCard({ batch, lang }: { batch: MessageBatch; lang: string }) {
   };
 
   return (
-    <Card className="overflow-hidden border-border/70 shadow-sm dark:border-white/10">
+    <Card className="overflow-hidden border-border/70">
       <CardContent className="p-4">
         <div className="mb-2 flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium dark:text-slate-100">{batch.body}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground dark:text-slate-400">{format(batch.createdAt, 'PPp')}</p>
+            <p className="truncate text-sm font-medium">{batch.body}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{format(batch.createdAt, 'PPp')}</p>
           </div>
           <Badge variant="secondary" className={`ml-2 shrink-0 border text-[10px] ${statusColors[batch.status]}`}>
             {t(batch.status, lang)}
