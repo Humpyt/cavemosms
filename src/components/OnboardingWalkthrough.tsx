@@ -6,7 +6,6 @@ import {
   FileSpreadsheet,
   MessageSquareShare,
   ShieldCheck,
-  Sparkles,
   Users2,
 } from 'lucide-react';
 
@@ -23,7 +22,7 @@ const steps = [
     description:
       'Write one message, personalize it with placeholders, and send it through the phone already in your hand.',
     accent:
-      'from-sky-500/25 via-sky-500/10 to-cyan-400/10 dark:from-sky-400/20 dark:via-sky-400/10 dark:to-cyan-300/10',
+      'from-primary/25 via-primary/10 to-primary/5',
     statLabel: 'Delivery lane',
     statValue: 'Native Android SMS',
     bullets: ['Personalize with {name}', 'Queue and retry safely'],
@@ -35,7 +34,7 @@ const steps = [
     description:
       'Import CSV or phone-only files, spot duplicates before they land, and keep tags ready for targeting.',
     accent:
-      'from-emerald-500/25 via-emerald-500/10 to-lime-400/10 dark:from-emerald-400/20 dark:via-emerald-400/10 dark:to-lime-300/10',
+      'from-primary/25 via-primary/10 to-primary/5',
     statLabel: 'Accepted formats',
     statValue: 'CSV, TXT, paste',
     bullets: ['Detect duplicates early', 'Use tags for quick segments'],
@@ -47,7 +46,7 @@ const steps = [
     description:
       'Review batches, retry problem sends, and export evidence when a campaign needs a paper trail.',
     accent:
-      'from-amber-500/25 via-orange-500/10 to-rose-400/10 dark:from-amber-400/20 dark:via-orange-400/10 dark:to-rose-300/10',
+      'from-primary/25 via-primary/10 to-primary/5',
     statLabel: 'Visibility',
     statValue: 'Batch analytics',
     bullets: ['See queued vs sent', 'Export campaign records'],
@@ -59,7 +58,7 @@ const steps = [
     description:
       'Enable SMS access, verify your SIM is active, and you are ready to run local outreach without extra infrastructure.',
     accent:
-      'from-violet-500/25 via-fuchsia-500/10 to-sky-400/10 dark:from-violet-400/20 dark:via-fuchsia-400/10 dark:to-sky-300/10',
+      'from-primary/25 via-primary/10 to-primary/5',
     statLabel: 'First action',
     statValue: 'Open Settings, allow SMS',
     bullets: ['Grant send and read access', 'Confirm dual-SIM selection if needed'],
@@ -111,8 +110,8 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
         <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-slate-950 text-white shadow-[0_30px_120px_rgba(15,23,42,0.45)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(45,212,191,0.18),_transparent_24%),linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.98))]" />
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-          <div className="pointer-events-none absolute -left-14 top-16 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl splash-orb-float" />
-          <div className="pointer-events-none absolute -right-10 bottom-12 h-36 w-36 rounded-full bg-emerald-400/20 blur-3xl splash-orb-float-delayed" />
+          <div className="pointer-events-none absolute -left-14 top-16 h-40 w-40 rounded-full bg-primary/20 blur-3xl splash-orb-float" />
+          <div className="pointer-events-none absolute -right-10 bottom-12 h-36 w-36 rounded-full bg-primary/20 blur-3xl splash-orb-float-delayed" />
 
           <AnimatePresence mode="wait">
             {phase === 'splash' ? (
@@ -125,9 +124,9 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                 className="relative flex min-h-[560px] flex-col justify-between p-6 sm:p-7"
               >
                 <div className="space-y-5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-100/90">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Group Message Pro
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-primary/90">
+                    <img src="/logo.png" className="h-3.5 w-3.5 object-contain" alt="Logo" />
+                    Camo SMS
                   </div>
 
                   <div className="space-y-3">
@@ -138,7 +137,7 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                       className="flex items-center gap-3"
                     >
                       <div className="flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white/10 ring-1 ring-white/15 backdrop-blur">
-                        <MessageSquareShare className="h-8 w-8 text-sky-300" />
+                        <MessageSquareShare className="h-8 w-8 text-primary" />
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs uppercase tracking-[0.24em] text-slate-300">Mobile dispatch studio</p>
@@ -167,24 +166,24 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                         <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">Live workflow</p>
                         <p className="mt-1 font-display text-xl font-semibold">Audience to delivery</p>
                       </div>
-                      <div className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[11px] font-medium text-emerald-200">
+                      <div className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
                         Native SMS
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 text-left">
                       <div className="rounded-2xl border border-white/10 bg-slate-900/45 p-3">
-                        <Users2 className="mb-3 h-4 w-4 text-sky-300" />
+                        <Users2 className="mb-3 h-4 w-4 text-primary" />
                         <p className="text-lg font-semibold">01</p>
                         <p className="text-xs text-slate-400">Import lists</p>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-slate-900/45 p-3">
-                        <MessageSquareShare className="mb-3 h-4 w-4 text-cyan-300" />
+                        <MessageSquareShare className="mb-3 h-4 w-4 text-primary" />
                         <p className="text-lg font-semibold">02</p>
                         <p className="text-xs text-slate-400">Build message</p>
                       </div>
                       <div className="rounded-2xl border border-white/10 bg-slate-900/45 p-3">
-                        <BarChart3 className="mb-3 h-4 w-4 text-emerald-300" />
+                        <BarChart3 className="mb-3 h-4 w-4 text-primary" />
                         <p className="text-lg font-semibold">03</p>
                         <p className="text-xs text-slate-400">Review outcomes</p>
                       </div>
@@ -195,7 +194,7 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                 <div className="mt-6 flex items-center justify-between text-xs text-slate-400">
                   <span>Preparing workspace</span>
                   <span className="splash-loader h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
-                    <span className="block h-full w-1/2 rounded-full bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300" />
+                    <span className="block h-full w-1/2 rounded-full bg-gradient-to-r from-primary/50 via-primary to-primary/50" />
                   </span>
                 </div>
               </motion.div>
@@ -247,7 +246,7 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                         key={bullet}
                         className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-slate-200"
                       >
-                        <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-sky-300 to-emerald-300" />
+                        <div className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-primary to-primary/80" />
                         <span>{bullet}</span>
                       </div>
                     ))}

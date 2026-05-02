@@ -93,7 +93,7 @@ function AppContent() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Bulk SMS
+                    Camo SMS
                   </p>
                   <h1 className="text-base font-display font-semibold text-foreground dark:text-slate-50">
                     Native Campaign Console

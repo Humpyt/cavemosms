@@ -2,14 +2,14 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.bulksms.groupmessage',
-  appName: 'Bulk SMS',
+  appName: 'Camo SMS',
   webDir: 'dist',
   plugins: {
     SplashScreen: {
       launchShowDuration: 1200,
       launchAutoHide: true,
       showSpinner: false,
-      backgroundColor: '#0B1324',
+      backgroundColor: '#ffffff',
     },
   },
 };

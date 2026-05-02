@@ -71,7 +71,7 @@ export default function PWAInstallPrompt() {
           <Download className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Install BulkSMS</p>
+          <p className="text-sm font-semibold">Install Camo SMS</p>
           {isIOS ? (
             <p className="text-xs text-muted-foreground mt-0.5">
               Tap the share button, then "Add to Home Screen" to install.

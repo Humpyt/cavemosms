@@ -26,12 +26,12 @@ export default function LicenseGate({
     <div className="min-h-screen bg-background px-6 py-12 flex flex-col justify-center">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[24px] bg-primary/10">
-            <Lock className="h-8 w-8 text-primary" />
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[24px] bg-primary/10">
+            <img src="/logo.png" alt="Camo SMS" className="h-12 w-12 object-contain" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Sign In</h1>
           <p className="mt-2 text-sm font-medium text-muted-foreground">
-            Activate your BulkSMS license.
+            Activate your Camo SMS license.
           </p>
         </div>
 

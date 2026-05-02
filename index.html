@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     
-    <title>BulkSMS - Bulk Message Sender</title>
+    <title>Camo SMS - Bulk Message Sender</title>
     <meta name="description" content="Send bulk SMS messages with scheduling, templates, and analytics. Install on your phone for the best experience." />
     <meta name="author" content="Lovable" />
 
@@ -12,12 +12,12 @@
     <meta name="theme-color" content="#ffffff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="BulkSMS" />
+    <meta name="apple-mobile-web-app-title" content="Camo SMS" />
     <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
     <link rel="icon" href="/favicon.ico" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="BulkSMS - Bulk Message Sender" />
+    <meta property="og:title" content="Camo SMS - Bulk Message Sender" />
     <meta property="og:description" content="Send bulk SMS messages with scheduling, templates, and analytics." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
@@ -65,16 +65,10 @@
         pointer-events: none;
       }
 
-      .app-bootstrap__brand {
-        font-size: 36px;
-        font-weight: 800;
-        letter-spacing: -0.04em;
-        color: #111;
-        margin: 0;
-      }
-
-      .app-bootstrap__brand span {
-        color: #7BEB78;
+      .app-bootstrap__brand img {
+        width: 120px;
+        height: auto;
+        object-fit: contain;
       }
 
       .app-bootstrap__indicator {
@@ -96,7 +90,7 @@
 
   <body>
     <div id="app-bootstrap" aria-hidden="true">
-      <h1 class="app-bootstrap__brand">Bulk<span>SMS</span></h1>
+      <div class="app-bootstrap__brand"><img src="/logo.png" alt="Camo SMS" /></div>
       <div class="app-bootstrap__indicator"></div>
     </div>
     <div id="root"></div>

@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-02T14:31:08.324Z",
-  "buildLabel": "v1.0.20260502.1729 (6)",
+  "generatedAt": "2026-05-02T15:31:55.925Z",
+  "buildLabel": "v1.0.20260502.1830 (7)",
   "applicationId": "com.bulksms.groupmessage",
   "variant": "debug",
-  "versionCode": 6,
-  "versionName": "1.0.20260502.1729",
+  "versionCode": 7,
+  "versionName": "1.0.20260502.1830",
   "apkPath": "D:\\MOBILE APPS\\Bulksms\\backup 01\\group-message-pro-main\\android\\app\\build\\outputs\\apk\\debug\\app-debug.apk",
-  "apkSizeBytes": 5944696,
-  "apkLastWriteTime": "2026-05-02T14:31:07.664Z",
-  "apkSha256": "4d2dde2961142fbc30bd5c9921e63400a727cd96ece7f110b5b9b771fbfdf59c",
-  "releaseCopyPath": "D:\\MOBILE APPS\\Bulksms\\backup 01\\group-message-pro-main\\releases\\app-debug-v1.0.20260502.1729_(6).apk"
+  "apkSizeBytes": 6172832,
+  "apkLastWriteTime": "2026-05-02T15:31:55.551Z",
+  "apkSha256": "7382c36aa455191efea8986e698c8a2f11c6f1900454a6a35bcf60e8a6d752ac",
+  "releaseCopyPath": "D:\\MOBILE APPS\\Bulksms\\backup 01\\group-message-pro-main\\releases\\app-debug-v1.0.20260502.1830_(7).apk"
 }
