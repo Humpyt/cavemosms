@@ -1,0 +1,18 @@
+<svg width="720" height="220" viewBox="0 0 720 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="200" height="200" rx="48" fill="url(#g2)"/>
+  <path d="M58 71C58 62.1634 65.1634 55 74 55H102C110.837 55 118 62.1634 118 71V138C118 160.091 100.091 178 78 178H74C65.1634 178 58 170.837 58 162V71Z" fill="white" fill-opacity="0.95"/>
+  <path d="M142 55H154C162.837 55 170 62.1634 170 71V149C170 165.569 156.569 179 140 179V179C123.431 179 110 165.569 110 149V144H126V149C126 156.18 131.82 162 139 162V162C146.18 162 152 156.18 152 149V71C152 62.1634 159.163 55 168 55H170" fill="white" fill-opacity="0.95"/>
+  <circle cx="126" cy="110" r="10" fill="#14B8A6"/>
+  <text x="240" y="104" fill="#E2E8F0" font-size="56" font-family="Inter,Segoe UI,Arial,sans-serif" font-weight="800">UG LIVE</text>
+  <text x="244" y="144" fill="#94A3B8" font-size="26" font-family="Inter,Segoe UI,Arial,sans-serif" font-weight="600">BulkSMS Pro</text>
+</svg>

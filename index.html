@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <title>BulkSMS - Bulk Message Sender</title>
+    <meta name="description" content="Send bulk SMS messages with scheduling, templates, and analytics. Install on your phone for the best experience." />
+    <meta name="author" content="Lovable" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BulkSMS" />
+    <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="BulkSMS - Bulk Message Sender" />
+    <meta property="og:description" content="Send bulk SMS messages with scheduling, templates, and analytics." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #0b1324;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #0b1324;
+      }
+
+      body {
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      #app-bootstrap {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        color: #fff;
+        background:
+          radial-gradient(circle at top, rgba(56, 189, 248, 0.16), transparent 30%),
+          radial-gradient(circle at bottom right, rgba(45, 212, 191, 0.18), transparent 24%),
+          linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.98));
+        transition: opacity 220ms ease, visibility 220ms ease;
+      }
+
+      #app-bootstrap.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .app-bootstrap__panel {
+        width: min(100%, 360px);
+        padding: 28px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 30px 120px rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(18px);
+      }
+
+      .app-bootstrap__eyebrow {
+        margin: 0 0 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: rgba(186, 230, 253, 0.9);
+      }
+
+      .app-bootstrap__title {
+        margin: 0;
+        font-size: 32px;
+        line-height: 1;
+      }
+
+      .app-bootstrap__copy {
+        margin: 12px 0 20px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: rgba(226, 232, 240, 0.88);
+      }
+
+      .app-bootstrap__status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 12px;
+        color: rgba(148, 163, 184, 1);
+      }
+
+      .app-bootstrap__track {
+        position: relative;
+        width: 96px;
+        height: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .app-bootstrap__bar {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 50%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7dd3fc, #67e8f9, #6ee7b7);
+        animation: app-bootstrap-loader 1.5s ease-in-out infinite;
+      }
+
+      @keyframes app-bootstrap-loader {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(220%);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app-bootstrap" aria-hidden="true">
+      <div class="app-bootstrap__panel">
+        <p class="app-bootstrap__eyebrow">Group Message Pro</p>
+        <h1 class="app-bootstrap__title">Send smarter.</h1>
+        <p class="app-bootstrap__copy">
+          Preparing your workspace, message queue, and local SMS tools.
+        </p>
+        <div class="app-bootstrap__status">
+          <span>Starting app</span>
+          <span class="app-bootstrap__track"><span class="app-bootstrap__bar"></span></span>
+        </div>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script>
+      window.__hideAppBootstrap = function () {
+        const splash = document.getElementById('app-bootstrap');
+        if (!splash || splash.dataset.hidden === 'true') return;
+        splash.dataset.hidden = 'true';
+        splash.classList.add('is-hidden');
+        window.setTimeout(function () {
+          splash.remove();
+        }, 260);
+      };
+
+      window.addEventListener('app-ready', function () {
+        window.__hideAppBootstrap();
+      }, { once: true });
+
+      window.setTimeout(function () {
+        window.__hideAppBootstrap();
+      }, 8000);
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

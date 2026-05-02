@@ -2,7 +2,6 @@ import { MessageSquare, Users, FileText, BarChart3, Settings, type LucideIcon } 
 import type { TabId } from '@/lib/types';
 import { t } from '@/lib/i18n';
 import { motion } from 'framer-motion';
-import GatewayStatusBadge from '@/components/GatewayStatusBadge';
 
 interface BottomNavProps {
   activeTab: TabId;
@@ -20,35 +19,32 @@ const tabs: { id: TabId; icon: LucideIcon; labelKey: string }[] = [
 
 export default function BottomNav({ activeTab, onTabChange, lang }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom">
-      <div className="flex flex-col items-center max-w-lg mx-auto">
-        <div className="flex items-center justify-end w-full py-1.5 pr-2">
-          <GatewayStatusBadge />
-        </div>
-        <div className="flex items-center justify-around h-16 w-full">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 safe-bottom">
+      <div className="surface-floating mx-auto max-w-lg rounded-[24px] border backdrop-blur-xl">
+        <div className="flex h-[72px] w-full items-center justify-around px-2">
           {tabs.map(({ id, icon: Icon, labelKey }) => {
             const isActive = activeTab === id;
             return (
               <button
                 key={id}
                 onClick={() => onTabChange(id)}
-                className="relative flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors"
+                className="relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-2xl transition-colors"
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute -top-0.5 w-8 h-0.5 rounded-full bg-primary"
+                    className="absolute inset-x-2 inset-y-2 rounded-2xl bg-primary/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:bg-primary/18"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
                 <Icon
-                  className={`w-5 h-5 transition-colors ${
+                  className={`relative z-10 w-5 h-5 transition-colors ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 />
                 <span
-                  className={`text-[10px] font-medium transition-colors ${
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                  className={`relative z-10 text-[10px] font-medium transition-colors ${
+                    isActive ? 'text-primary' : 'text-muted-foreground dark:text-slate-400'
                   }`}
                 >
                   {t(labelKey, lang)}

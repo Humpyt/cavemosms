@@ -76,4 +76,12 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['os', 'events', 'dgram', 'buffer', 'net'],
+    },
+  },
+  optimizeDeps: {
+    exclude: ['bonjour-service'],
+  },
 }));

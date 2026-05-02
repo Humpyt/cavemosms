@@ -48,19 +48,12 @@ export interface MessageLog {
   contactPhone: string;
   body: string;
   status: 'pending' | 'sending' | 'sent' | 'failed';
+  retryCount?: number;
+  nextRetryAt?: Date;
+  lastAttemptAt?: Date;
   sentAt?: Date;
   error?: string;
-  gatewayMessageId?: string;
-}
-
-export interface GatewayInfo {
-  id?: number;
-  name: string;         // device name from android-sms-gateway
-  address: string;      // IP:port
-  username: string;
-  password: string;
-  lastSeen: Date;
-  isOnline: boolean;
+  nativeRequestId?: string;
 }
 
 export interface SendResult {
@@ -69,7 +62,28 @@ export interface SendResult {
   error?: string;
 }
 
-export type GatewayStatus = 'idle' | 'discovering' | 'offline' | 'online' | 'error';
+export type NativePermissionState = 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale';
+
+export interface SmsSubscription {
+  id: number;
+  slotIndex: number;
+  displayName: string;
+  carrierName: string;
+  defaultSms: boolean;
+}
+
+export interface NativeSmsCapability {
+  supported: boolean;
+  canSend: boolean;
+  smsPermission: NativePermissionState;
+  phonePermission: NativePermissionState;
+  defaultSubscriptionId: number;
+  subscriptions: SmsSubscription[];
+  manufacturer?: string;
+  model?: string;
+}
+
+export type NativeSmsServiceStatus = 'checking' | 'ready' | 'blocked' | 'unsupported' | 'error';
 
 export interface AppSettings {
   id?: number;
@@ -77,6 +91,7 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   sendDelay: number; // ms between messages
   maxRetries: number;
+  preferredSubscriptionId: number | null;
 }
 
 export type TabId = 'messages' | 'contacts' | 'templates' | 'analytics' | 'settings';
