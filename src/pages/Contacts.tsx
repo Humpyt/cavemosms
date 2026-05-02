@@ -318,78 +318,81 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
 
   return (
     <PullToRefresh onRefresh={async () => await new Promise((resolve) => setTimeout(resolve, 600))}>
-      <div className="px-4 pb-20 pt-2">
-        <section className="mb-4 overflow-hidden rounded-[28px] border border-border bg-card px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Audience Desk
-              </p>
-              <h1 className="mt-1 text-2xl font-display font-bold">{t('contacts', lang)}</h1>
-              <p className="mt-1 max-w-[18rem] text-sm text-muted-foreground">
-                Import, segment, and maintain the audience behind every campaign.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className=""
-                onClick={exportCSV}
-                disabled={contacts.length === 0}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setImportDialogOpen(true)}
-              >
-                <Upload className="h-4 w-4" />
-              </Button>
-            </div>
+      <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
+        
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('contacts', lang)}</h1>
+            <p className="text-sm text-muted-foreground mt-1">Manage your audience.</p>
           </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <StatPill label="Total" value={contacts.length} />
-            <StatPill label="Active" value={totalActive} />
-            <StatPill label="Opt-out" value={optedOutCount} tone="warning" />
+          <div className="flex gap-2">
+            <button 
+              onClick={exportCSV} 
+              disabled={contacts.length === 0}
+              className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setImportDialogOpen(true)}
+              className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Upload className="w-5 h-5" />
+            </button>
           </div>
-        </section>
+        </div>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Stats */}
+        <div className="flex gap-3 mb-6 overflow-x-auto no-scrollbar pb-2">
+           <div className="px-4 py-2.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold whitespace-nowrap">
+             <span className="text-primary mr-1">•</span> {contacts.length} Total
+           </div>
+           <div className="px-4 py-2.5 rounded-full bg-success/20 text-success-foreground text-xs font-semibold whitespace-nowrap">
+             {totalActive} Active
+           </div>
+           {optedOutCount > 0 && (
+             <div className="px-4 py-2.5 rounded-full bg-destructive/10 text-destructive text-xs font-semibold whitespace-nowrap">
+               {optedOutCount} Opted Out
+             </div>
+           )}
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('search', lang)}
-            className="pl-9"
+            className="pl-11 h-14 rounded-full bg-secondary border-0 text-[15px] focus-visible:ring-1 focus-visible:ring-primary shadow-none"
           />
         </div>
 
-        <div className="mb-4 flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1 gap-1.5"
+        {/* Action Buttons */}
+        <div className="flex gap-3 mb-8">
+          <button
             onClick={openNewGroup}
+            className="flex-1 py-4 rounded-[20px] bg-secondary text-secondary-foreground font-bold text-[14px] flex items-center justify-center gap-2 hover:bg-secondary/80 transition-colors"
           >
-            <Users className="h-4 w-4" />
+            <Users className="w-4 h-4" />
             {t('createGroup', lang)}
-          </Button>
-          <Button size="sm" className="flex-1 gap-1.5" onClick={openNewContact}>
-            <UserPlus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={openNewContact}
+            className="flex-1 py-4 rounded-[20px] bg-accent text-accent-foreground font-bold text-[14px] flex items-center justify-center gap-2 hover:bg-accent/90 transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
             {t('addContact', lang)}
-          </Button>
+          </button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 grid w-full grid-cols-2 rounded-2xl bg-muted/50">
-            <TabsTrigger value="contacts" className="rounded-xl">
+          <TabsList className="mb-6 grid w-full grid-cols-2 rounded-full bg-secondary p-1.5 h-14">
+            <TabsTrigger value="contacts" className="rounded-full text-sm font-semibold h-full data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               {t('allContacts', lang)}
             </TabsTrigger>
-            <TabsTrigger value="groups" className="rounded-xl">
+            <TabsTrigger value="groups" className="rounded-full text-sm font-semibold h-full data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
               {t('groups', lang)}
             </TabsTrigger>
           </TabsList>
@@ -414,14 +417,14 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                     >
                       <SwipeToDelete onDelete={() => deleteContact(contact.id!)}>
-                        <Card className={`overflow-hidden ${contact.optedOut ? 'opacity-60' : ''}`}>
-                          <CardContent className="p-2.5">
-                            <div className="flex items-center justify-between gap-2">
+                        <div className={`overflow-hidden bg-card rounded-[24px] border border-border/50 mb-3 hover:border-border transition-colors ${contact.optedOut ? 'opacity-60' : ''}`}>
+                          <div className="p-4">
+                            <div className="flex items-center justify-between gap-3">
                               <div
-                                className="min-w-0 flex flex-1 items-center gap-2.5"
+                                className="min-w-0 flex flex-1 items-center gap-3"
                                 onClick={() => openEditContact(contact)}
                               >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-[11px] font-semibold text-primary">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-primary/20 text-[14px] font-bold text-primary">
                                   {contact.name
                                     .split(' ')
                                     .slice(0, 2)
@@ -429,22 +432,22 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                                     .join('')}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="truncate text-sm font-medium">{contact.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="truncate text-[15px] font-bold text-foreground">{contact.name}</p>
                                     {contact.optedOut && (
-                                      <Badge variant="destructive" className="px-1.5 py-0 text-[10px]">
+                                      <Badge variant="destructive" className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide">
                                         {t('optedOut', lang)}
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                                    <Phone className="h-3 w-3" />
+                                  <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                                    <Phone className="h-3.5 w-3.5" />
                                     {contact.phone}
                                   </p>
-                                  <div className="mt-1 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-1">
+                                  <div className="mt-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-1 no-scrollbar">
                                     {contact.location && (
-                                      <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-secondary/45 px-2 py-0.5 text-[10px] text-muted-foreground">
-                                        <MapPin className="h-2.5 w-2.5" />
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-secondary-foreground">
+                                        <MapPin className="h-3 w-3" />
                                         {contact.location}
                                       </span>
                                     )}
@@ -452,32 +455,32 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                                       <Badge
                                         key={tag}
                                         variant="secondary"
-                                        className="inline-flex items-center gap-1 px-1.5 py-0 text-[10px]"
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] bg-secondary text-secondary-foreground"
                                       >
-                                        <Tag className="h-2.5 w-2.5" />
+                                        <Tag className="h-3 w-3" />
                                         {tag}
                                       </Badge>
                                     ))}
                                     {contact.tags.length > 2 && (
                                       <Badge
                                         variant="secondary"
-                                        className="px-1.5 py-0 text-[10px]"
+                                        className="px-2.5 py-1 text-[10px] bg-secondary"
                                       >
                                         +{contact.tags.length - 2}
                                       </Badge>
                                     )}
                                     {!contact.location && contact.tags.length === 0 && (
-                                      <span className="text-[10px] text-muted-foreground/80">No labels</span>
+                                      <span className="text-[10px] font-medium text-muted-foreground/80">No labels</span>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                              <div className="ml-1 flex items-center gap-2">
+                              <div className="ml-1 flex items-center shrink-0">
                                 <Switch checked={!contact.optedOut} onCheckedChange={() => toggleOptOut(contact)} />
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                          </div>
+                        </div>
                       </SwipeToDelete>
                     </motion.div>
                   ))
@@ -507,64 +510,50 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                 groups.map((group) => {
                   const memberCount = contacts.filter((contact) => contact.groupIds.includes(group.id!)).length;
                   return (
-                    <Card key={group.id}>
-                      <CardContent className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: group.color }} />
-                          <div>
-                            <p className="text-sm font-medium">{group.name}</p>
-                            <p className="text-xs text-muted-foreground">{memberCount} contacts</p>
+                    <div key={group.id} className="bg-card rounded-[24px] border border-border/50 hover:border-border transition-colors mb-3">
+                      <div className="flex flex-col p-4">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="h-12 w-12 rounded-[18px] flex items-center justify-center" style={{ backgroundColor: `${group.color}20`, color: group.color }}>
+                             <Users className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[16px] font-bold text-foreground truncate">{group.name}</p>
+                            <p className="text-xs font-semibold text-muted-foreground mt-0.5">{memberCount} contacts</p>
                           </div>
                         </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                        <div className="flex gap-2">
+                          <button
+                            className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
                             onClick={() => openAddExistingToGroup(group)}
-                            title="Add contacts"
-                            aria-label="Add contacts"
                           >
-                            <Plus className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                            <Plus className="h-3.5 w-3.5" /> Add
+                          </button>
+                          <button
+                            className="flex-1 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
                             onClick={() => openCsvImportToGroup(group)}
-                            title="Import CSV"
-                            aria-label="Import CSV"
                           >
-                            <Upload className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                            <Upload className="h-3.5 w-3.5" /> CSV
+                          </button>
+                          <button
+                            className="w-10 h-10 rounded-xl bg-secondary text-secondary-foreground flex items-center justify-center hover:bg-secondary/80 transition-colors"
                             onClick={() => {
                               setEditingGroup(group);
                               setGroupName(group.name);
                               setGroupColor(group.color);
                               setGroupDialogOpen(true);
                             }}
-                            title="Edit group"
-                            aria-label="Edit group"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          </button>
+                          <button
+                            className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
                             onClick={() => deleteGroup(group.id!)}
-                            title="Delete group"
-                            aria-label="Delete group"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          </button>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   );
                 })
               )}

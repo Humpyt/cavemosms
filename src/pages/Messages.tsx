@@ -5,21 +5,21 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarIcon,
-  CheckCircle2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Clock,
-  Layers3,
   Send,
   TimerReset,
   Users,
+  SlidersHorizontal,
+  Layers,
 } from 'lucide-react';
 
 import PullToRefresh from '@/components/PullToRefresh';
 import { BatchListSkeleton } from '@/components/SkeletonLoaders';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -43,11 +43,11 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [recurringType, setRecurringType] = useState<string>('none');
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
 
   const {
     serviceStatus,
-    capability,
     canSend,
     queuedCount,
     error,
@@ -130,326 +130,258 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
     setScheduleDate(undefined);
     setRecurringType('none');
     setShowSchedule(false);
+    setShowAdvanced(false);
   }
 
   return (
     <PullToRefresh onRefresh={processQueueNow}>
-      <div className="px-4 pb-28 pt-4">
-        <section className="mb-4 overflow-hidden rounded-[28px] border border-border bg-card px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Dispatch Center
-              </p>
-              <h2 className="mt-1 text-2xl font-display font-bold">{t('messages', lang)}</h2>
-              <p className="mt-1 max-w-[18rem] text-sm text-muted-foreground">
-                Compose campaigns and send directly from this Android phone.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => void processQueueNow()}
-            >
-              <TimerReset className="h-4 w-4" />
-              Sync
-            </Button>
+      <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
+        
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('messages', lang)}</h1>
+            <p className="text-sm text-muted-foreground mt-1">Ready to reach your audience.</p>
           </div>
-
-          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-            <Badge className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[10px] text-primary">
-              Android native SMS
-            </Badge>
-            <Badge className="rounded-full border border-border bg-muted px-3 py-1 text-[10px] text-muted-foreground">
-              {canSend ? 'Ready to send' : 'Permission needed'}
-            </Badge>
-            <Badge className="rounded-full border border-border bg-muted px-3 py-1 text-[10px] text-muted-foreground">
-              {queuedCount} queued
-            </Badge>
-          </div>
-        </section>
-
-        <div className="mb-4 grid grid-cols-3 gap-2">
-          <InfoCard label="Recipients" value={selectedContacts.length} helper="selected" icon={Users} />
-          <InfoCard label="Segments" value={segmentCount} helper={`${charCount} chars`} icon={Layers3} />
-          <InfoCard
-            label="Queue"
-            value={queuedCount}
-            helper={canSend ? 'ready' : 'blocked'}
-            icon={canSend ? CheckCircle2 : AlertTriangle}
-          />
+          <button 
+            onClick={() => void processQueueNow()} 
+            className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center text-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <TimerReset className="w-5 h-5" />
+          </button>
         </div>
 
-        <Card className="mb-5 overflow-hidden border-border">
-          <CardHeader className="space-y-1 border-b border-border bg-muted/30 pb-4">
-            <CardTitle className="text-base font-display">Compose Campaign</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Pick recipients, write your message, then send now or schedule it.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4">
-            {serviceStatus === 'unsupported' && (
-              <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-xs text-destructive">
-                This device does not expose Android SMS sending to the app.
-              </div>
-            )}
+        {/* Status Pills */}
+        <div className="flex gap-3 mb-8 overflow-x-auto no-scrollbar pb-2">
+          {serviceStatus === 'unsupported' ? (
+             <div className="px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap bg-destructive/10 text-destructive flex items-center gap-2">
+               <AlertTriangle className="w-4 h-4" /> Unsupported Device
+             </div>
+          ) : !canSend ? (
+            <button onClick={() => void requestSmsPermission()} className="px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap bg-warning/20 text-warning-foreground flex items-center gap-2">
+              ⚠️ Grant SMS Permission
+            </button>
+          ) : (
+            <div className="px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap bg-accent text-accent-foreground flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]"></span>
+              Gateway Online
+            </div>
+          )}
+          
+          <div className="px-4 py-2.5 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold whitespace-nowrap flex gap-2 items-center">
+            <Clock className="w-4 h-4" />
+            {queuedCount} Queued
+          </div>
+        </div>
 
-            {serviceStatus !== 'unsupported' && !canSend && (
-              <div className="rounded-2xl border border-warning/30 bg-warning/10 px-3 py-3 text-xs text-warning">
-                <p>Grant SMS permission before sending.</p>
-                {error && <p className="mt-1 text-[11px]">{error}</p>}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="mt-2 h-8 text-[11px]"
-                  onClick={() => void requestSmsPermission()}
-                >
-                  Allow SMS
-                </Button>
-              </div>
-            )}
+        {/* Compose Section (E-Commerce Product Card Style) */}
+        <div className="bg-card rounded-[32px] p-5 mb-8 shadow-sm border border-border/50">
+          <h2 className="text-lg font-bold mb-4 px-1">New Campaign</h2>
+          
+          {/* Step 1: Recipients */}
+          <button 
+            onClick={() => setRecipientDialogOpen(true)} 
+            className="w-full flex items-center justify-between bg-background rounded-[24px] p-4 mb-3 border border-border/50 hover:border-border transition-colors"
+          >
+             <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary-foreground">
+                 <Users className="w-6 h-6" />
+               </div>
+               <div className="text-left">
+                 <p className="font-semibold text-[15px]">{selectedContacts.length > 0 ? `${selectedContacts.length} Recipients` : 'Select Recipients'}</p>
+                 <p className="text-xs text-muted-foreground mt-0.5">
+                   {optedOutCount > 0 && selectedContacts.length > 0 ? `${optedOutCount} opted out` : 'Tap to add contacts or groups'}
+                 </p>
+               </div>
+             </div>
+             <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
 
-            {canSend && (
-              <div className="rounded-2xl border border-success/30 bg-success/10 px-3 py-3 text-xs text-success">
-                Native SMS ready{capability.model ? ` on ${capability.model}` : ''}.
-              </div>
-            )}
+          {/* Step 2: Message Body */}
+          <div className="bg-background rounded-[24px] p-4 mb-4 border border-border/50 focus-within:border-primary/50 transition-colors">
+            <Textarea 
+               className="border-0 bg-transparent p-1 text-[15px] focus-visible:ring-0 resize-none min-h-[120px] placeholder:text-muted-foreground/60" 
+               placeholder="Type your message here..."
+               value={messageBody}
+               onChange={e => setMessageBody(e.target.value)}
+            />
+            <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
+               <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-1 rounded-md">
+                 {charCount} chars • {segmentCount} sms
+               </span>
+               <button 
+                 onClick={() => setShowAdvanced(!showAdvanced)} 
+                 className={`p-2 rounded-full transition-colors ${showAdvanced ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground'}`}
+               >
+                 <SlidersHorizontal className="w-4 h-4" />
+               </button>
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                className="h-12 w-full justify-between rounded-2xl border-border bg-background/70"
-                onClick={() => setRecipientDialogOpen(true)}
+          {/* Advanced Options Slide-down */}
+          <AnimatePresence initial={false}>
+            {showAdvanced && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }} 
+                animate={{ height: 'auto', opacity: 1 }} 
+                exit={{ height: 0, opacity: 0 }} 
+                className="overflow-hidden mb-4"
               >
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {selectedContacts.length > 0
-                    ? `${selectedContacts.length} ${t('recipients', lang)}`
-                    : t('selectRecipients', lang)}
-                </span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-
-              {selectedContacts.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedContacts.slice(0, 8).map((contact) => (
-                    <Badge key={contact.id} variant="secondary" className="rounded-full px-2.5 py-1 text-[10px]">
-                      {contact.name}
-                    </Badge>
-                  ))}
-                  {selectedContacts.length > 8 && (
-                    <Badge variant="secondary" className="rounded-full px-2.5 py-1 text-[10px]">
-                      +{selectedContacts.length - 8} more
-                    </Badge>
-                  )}
-                </div>
-              )}
-
-              {optedOutCount > 0 && selectedContacts.length > 0 && (
-                <p className="flex items-center gap-1 text-xs text-warning">
-                  <AlertTriangle className="h-3 w-3" />
-                  {optedOutCount} {t('optOutNotice', lang)}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Textarea
-                value={messageBody}
-                onChange={(event) => setMessageBody(event.target.value)}
-                placeholder={t('messageBody', lang)}
-                className="min-h-[180px] resize-none rounded-[1.35rem] border-border bg-background/75 px-4 py-3"
-              />
-              <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {charCount} {t('characters', lang)} · {segmentCount} {t('segments', lang)}
-                </span>
-                <div className="flex gap-1">
-                  {['name', 'phone', 'location'].map((placeholder) => (
-                    <button
-                      key={placeholder}
-                      type="button"
-                      onClick={() => insertPlaceholder(placeholder)}
-                      className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
-                    >
-                      {`{${placeholder}}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {safeTemplates.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-medium text-muted-foreground">Saved Templates</p>
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {safeTemplates.map((template) => (
-                    <button
-                      key={template.id}
-                      type="button"
-                      onClick={() => setMessageBody(template.body)}
-                      className="shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary hover:text-primary"
-                    >
-                      {template.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="rounded-[1.4rem] border border-border/70 bg-muted/20 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium">Schedule</p>
-                  <p className="text-xs text-muted-foreground">
-                    {scheduleInFuture && scheduleDate
-                      ? `Queued for ${format(scheduleDate, 'PPp')}`
-                      : 'Send immediately or choose a time.'}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setShowSchedule((value) => !value)}
-                >
-                  <Clock className="h-4 w-4" />
-                  {showSchedule ? 'Hide' : t('schedule', lang)}
-                </Button>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {showSchedule && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-3 pt-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full justify-start gap-2 rounded-xl"
+                <div className="bg-background rounded-[24px] p-5 border border-border/50 space-y-5">
+                  
+                  {/* Templates */}
+                  {safeTemplates.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1">
+                        <Layers className="w-3.5 h-3.5" /> Quick Templates
+                      </p>
+                      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                        {safeTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            type="button"
+                            onClick={() => setMessageBody(template.body)}
+                            className="shrink-0 rounded-full bg-secondary px-4 py-2 text-xs font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                           >
-                            <CalendarIcon className="h-4 w-4" />
-                            {scheduleDate ? format(scheduleDate, 'PPp') : 'Pick date and time'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <div className="flex flex-col">
-                            <Calendar
-                              mode="single"
-                              selected={scheduleDate}
-                              onSelect={(day) => {
-                                if (!day) return;
-                                const previous = scheduleDate || new Date();
-                                day.setHours(previous.getHours(), previous.getMinutes(), 0, 0);
-                                setScheduleDate(new Date(day));
-                              }}
-                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                              initialFocus
-                            />
-                            <div className="flex items-center gap-2 px-3 pb-3">
-                              <label className="text-xs text-muted-foreground">Time</label>
-                              <Input
-                                type="time"
-                                className="h-8 w-auto text-sm"
-                                value={scheduleDate ? format(scheduleDate, 'HH:mm') : ''}
-                                onChange={(event) => {
-                                  const [hours, minutes] = event.target.value.split(':').map(Number);
-                                  const nextDate = scheduleDate ? new Date(scheduleDate) : new Date();
-                                  nextDate.setHours(hours, minutes, 0, 0);
-                                  setScheduleDate(nextDate);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-
-                      <Select value={recurringType} onValueChange={setRecurringType}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={t('recurringType', lang)} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {['none', 'daily', 'weekly', 'monthly'].map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {t(option, lang)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            {template.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  )}
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={clearComposer}
+                  {/* Variables */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Variables</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['name', 'phone', 'location'].map((placeholder) => (
+                        <button
+                          key={placeholder}
+                          type="button"
+                          onClick={() => insertPlaceholder(placeholder)}
+                          className="rounded-full border border-border bg-transparent px-3 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                        >
+                          +{placeholder}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scheduling */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" /> Scheduling
+                      </p>
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start gap-3 rounded-xl h-12 bg-transparent border-border hover:bg-secondary">
+                          <CalendarIcon className="h-4 w-4" />
+                          <span className="text-sm">{scheduleDate ? format(scheduleDate, 'PPp') : 'Send Immediately'}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-[24px] overflow-hidden" align="center">
+                        <div className="flex flex-col bg-background">
+                          <Calendar
+                            mode="single"
+                            selected={scheduleDate}
+                            onSelect={(day) => {
+                              if (!day) return;
+                              const previous = scheduleDate || new Date();
+                              day.setHours(previous.getHours(), previous.getMinutes(), 0, 0);
+                              setScheduleDate(new Date(day));
+                            }}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                          />
+                          <div className="flex items-center gap-3 px-4 pb-4 pt-2">
+                            <label className="text-xs font-semibold text-muted-foreground">Time</label>
+                            <Input
+                              type="time"
+                              className="h-9 w-full rounded-lg text-sm bg-secondary border-0"
+                              value={scheduleDate ? format(scheduleDate, 'HH:mm') : ''}
+                              onChange={(event) => {
+                                const [hours, minutes] = event.target.value.split(':').map(Number);
+                                const nextDate = scheduleDate ? new Date(scheduleDate) : new Date();
+                                nextDate.setHours(hours, minutes, 0, 0);
+                                setScheduleDate(nextDate);
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Send Button */}
+          <div className="flex gap-2">
+            {(messageBody || selectedContacts.length > 0 || scheduleDate) && (
+              <button 
+                onClick={clearComposer} 
+                className="px-5 py-4 rounded-[20px] font-bold text-[15px] bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all"
               >
                 Clear
-              </Button>
-              <Button
-                onClick={() => void handleSend()}
-                disabled={sendDisabled}
-                className="flex-1 gap-1.5"
-              >
-                {scheduleInFuture ? <Clock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                {scheduleInFuture ? t('schedule', lang) : t('send', lang)}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </button>
+            )}
+            <button 
+              onClick={() => void handleSend()} 
+              disabled={sendDisabled}
+              className={`flex-1 py-4 rounded-[20px] font-bold text-[15px] flex justify-center items-center gap-2 transition-all shadow-sm ${
+                sendDisabled ? 'bg-secondary text-muted-foreground opacity-70' : 'bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98]'
+              }`}
+            >
+              {scheduleInFuture ? <Clock className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+              {scheduleInFuture ? 'Schedule' : 'Send Campaign'}
+            </button>
+          </div>
+        </div>
 
+        {/* Recent Activity */}
         <section>
-          <div className="mb-3">
-            <h3 className="text-sm font-display font-semibold">{t('recentBatches', lang)}</h3>
-            <p className="text-xs text-muted-foreground">Latest campaign activity on this device.</p>
+          <div className="flex items-center justify-between mb-4 px-1">
+            <h2 className="text-lg font-bold">Recent Activity</h2>
+            <span className="text-xs font-semibold text-primary cursor-pointer hover:underline">See All</span>
           </div>
 
           {isLoading ? (
-            <BatchListSkeleton count={4} />
+            <BatchListSkeleton count={3} />
           ) : (
             <div className="space-y-3">
               {safeBatches.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <MessageSquareIcon className="mb-3 h-12 w-12 opacity-40" />
-                    <p className="text-sm">{t('noMessages', lang)}</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-card rounded-[24px] border border-dashed border-border/80 flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
+                    <Send className="h-5 w-5 opacity-50" />
+                  </div>
+                  <p className="text-sm font-medium">No recent campaigns</p>
+                </div>
               ) : (
-                safeBatches.map((batch) => <BatchCard key={batch.id} batch={batch} lang={lang} />)
+                safeBatches.map((batch) => <BatchRow key={batch.id} batch={batch} lang={lang} />)
               )}
             </div>
           )}
         </section>
 
+        {/* Recipients Dialog */}
         <Dialog open={recipientDialogOpen} onOpenChange={setRecipientDialogOpen}>
-          <DialogContent className="max-h-[80vh] max-w-[95vw] sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="font-display">{t('selectRecipients', lang)}</DialogTitle>
+          <DialogContent className="max-h-[85vh] max-w-[95vw] sm:max-w-md rounded-[32px] p-6">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-xl font-bold">{t('selectRecipients', lang)}</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="max-h-[50vh]">
+            <ScrollArea className="max-h-[50vh] pr-4">
               {safeGroups.length > 0 && (
-                <div className="mb-4">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">{t('groups', lang)}</p>
+                <div className="mb-6">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('groups', lang)}</p>
                   <div className="space-y-2">
                     {safeGroups.map((group) => (
-                      <label
-                        key={group.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary"
-                      >
+                      <label key={group.id} className="flex cursor-pointer items-center gap-4 rounded-2xl p-3 bg-secondary/50 hover:bg-secondary transition-colors">
                         <Checkbox
+                          className="w-5 h-5 rounded-md border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                           checked={selectedGroupIds.includes(group.id!)}
                           onCheckedChange={(checked) => {
                             setSelectedGroupIds((previous) =>
@@ -457,22 +389,20 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                             );
                           }}
                         />
-                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: group.color }} />
-                        <span className="text-sm font-medium">{group.name}</span>
+                        <div className="h-4 w-4 rounded-full shadow-sm" style={{ backgroundColor: group.color }} />
+                        <span className="text-[15px] font-semibold">{group.name}</span>
                       </label>
                     ))}
                   </div>
                 </div>
               )}
 
-              <p className="mb-2 text-xs font-medium text-muted-foreground">{t('allContacts', lang)}</p>
-              <div className="space-y-1">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('allContacts', lang)}</p>
+              <div className="space-y-2">
                 {activeContacts.map((contact) => (
-                  <label
-                    key={contact.id}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-secondary"
-                  >
+                  <label key={contact.id} className="flex cursor-pointer items-center gap-4 rounded-2xl p-3 bg-secondary/50 hover:bg-secondary transition-colors">
                     <Checkbox
+                      className="w-5 h-5 rounded-md border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                       checked={selectedContactIds.includes(contact.id!)}
                       onCheckedChange={(checked) => {
                         setSelectedContactIds((previous) =>
@@ -481,16 +411,17 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                       }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{contact.name}</p>
-                      <p className="text-xs text-muted-foreground">{contact.phone}</p>
+                      <p className="truncate text-[15px] font-semibold">{contact.name}</p>
+                      <p className="text-xs text-muted-foreground font-medium">{contact.phone}</p>
                     </div>
                   </label>
                 ))}
               </div>
             </ScrollArea>
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 mt-6">
               <Button
                 variant="outline"
+                className="rounded-full h-12 font-semibold"
                 onClick={() => {
                   setSelectedContactIds(activeContacts.map((contact) => contact.id!).filter(Boolean));
                   setSelectedGroupIds([]);
@@ -498,7 +429,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
               >
                 {t('selectAll', lang)}
               </Button>
-              <Button onClick={() => setRecipientDialogOpen(false)}>{t('confirm', lang)}</Button>
+              <Button className="rounded-full h-12 font-semibold px-8" onClick={() => setRecipientDialogOpen(false)}>{t('confirm', lang)}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -507,86 +438,42 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
   );
 }
 
-function InfoCard({
-  label,
-  value,
-  helper,
-  icon: Icon,
-}: {
-  label: string;
-  value: number | string;
-  helper: string;
-  icon: typeof Users;
-}) {
-  return (
-    <Card className="border-border/70">
-      <CardContent className="p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
-          <div className="rounded-full bg-primary/10 p-1.5">
-            <Icon className="h-3.5 w-3.5 text-primary" />
-          </div>
-        </div>
-        <p className="text-lg font-display font-bold">{value}</p>
-        <p className="text-[10px] text-muted-foreground">{helper}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function MessageSquareIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  );
-}
-
-function BatchCard({ batch, lang }: { batch: MessageBatch; lang: string }) {
+function BatchRow({ batch, lang }: { batch: MessageBatch; lang: string }) {
   const statusColors: Record<string, string> = {
-    completed: 'bg-success/10 text-success border-success/20',
-    sending: 'bg-primary/10 text-primary border-primary/20',
-    pending: 'bg-muted text-muted-foreground border-border',
-    scheduled: 'bg-warning/10 text-warning border-warning/20',
+    completed: 'bg-success/20 text-success-foreground',
+    sending: 'bg-primary/20 text-primary-foreground',
+    pending: 'bg-secondary text-secondary-foreground',
+    scheduled: 'bg-warning/20 text-warning-foreground',
   };
 
   return (
-    <Card className="overflow-hidden border-border/70">
-      <CardContent className="p-4">
-        <div className="mb-2 flex items-start justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{batch.body}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{format(batch.createdAt, 'PPp')}</p>
+    <div className="bg-card rounded-[24px] p-4 border border-border/50 hover:border-border transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] font-semibold text-foreground mb-1">{batch.body}</p>
+          <p className="text-[11px] font-medium text-muted-foreground">{format(batch.createdAt, 'MMM d, h:mm a')}</p>
+          <div className="mt-2 flex gap-3">
+            <span className="text-[11px] font-bold text-success flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-success"></span> {batch.sentCount} {t('sent', lang)}
+            </span>
+            {batch.failedCount > 0 && (
+              <span className="text-[11px] font-bold text-destructive flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive"></span> {batch.failedCount} {t('failed', lang)}
+              </span>
+            )}
           </div>
-          <Badge variant="secondary" className={`ml-2 shrink-0 border text-[10px] ${statusColors[batch.status]}`}>
-            {t(batch.status, lang)}
-          </Badge>
         </div>
+        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${statusColors[batch.status]}`}>
+          {t(batch.status, lang)}
+        </div>
+      </div>
 
-        {batch.status === 'completed' && (
-          <div className="mt-2 flex gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-success" />
-              <span className="text-xs text-muted-foreground">
-                {batch.sentCount} {t('sent', lang)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-destructive" />
-              <span className="text-xs text-muted-foreground">
-                {batch.failedCount} {t('failed', lang)}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {batch.scheduledAt && (
-          <p className="mt-2 flex items-center gap-1 text-xs text-warning">
-            <Clock className="h-3 w-3" />
-            {t('scheduledFor', lang)}: {format(batch.scheduledAt, 'PPp')}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      {batch.scheduledAt && (
+        <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-1.5 text-[11px] font-bold text-warning">
+          <Clock className="h-3.5 w-3.5" />
+          {t('scheduledFor', lang)}: {format(batch.scheduledAt, 'MMM d, h:mm a')}
+        </div>
+      )}
+    </div>
   );
 }

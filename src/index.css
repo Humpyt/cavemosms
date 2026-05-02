@@ -9,95 +9,95 @@
     --font-sf-pro-display: "SF Pro Display", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-sf-pro-text: "SF Pro Text", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-    --background: 240 14% 96%;
-    --foreground: 240 3% 12%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 3% 12%;
+    --card: 0 0% 96%;
+    --card-foreground: 0 0% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 3% 12%;
+    --popover-foreground: 0 0% 12%;
 
-    --primary: 211 100% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 116 70% 64%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 240 9% 93%;
-    --secondary-foreground: 240 3% 12%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 12%;
 
-    --muted: 240 9% 93%;
-    --muted-foreground: 0 0% 44%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 240 9% 93%;
-    --accent-foreground: 240 3% 12%;
+    --accent: 0 0% 17%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 8% 92%;
-    --input: 240 8% 92%;
-    --ring: 211 100% 45%;
+    --border: 0 0% 92%;
+    --input: 0 0% 96%;
+    --ring: 116 70% 64%;
 
-    --radius: 1.75rem;
+    --radius: 1.5rem;
 
-    --warning: 24 100% 35%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
 
-    --success: 152 60% 42%;
-    --success-foreground: 0 0% 100%;
+    --success: 116 70% 64%;
+    --success-foreground: 0 0% 10%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 240 5% 16%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 5% 16%;
+    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
-    --background: 220 17% 10%;
-    --foreground: 220 12% 92%;
+    --background: 0 0% 10%;
+    --foreground: 0 0% 100%;
 
-    --card: 220 14% 13%;
-    --card-foreground: 220 12% 92%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 14% 13%;
-    --popover-foreground: 220 12% 92%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 211 100% 45%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 116 70% 64%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 220 13% 18%;
-    --secondary-foreground: 220 12% 92%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 13% 18%;
-    --muted-foreground: 220 8% 74%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 220 13% 18%;
-    --accent-foreground: 220 12% 92%;
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 58%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 26%;
-    --input: 220 12% 26%;
-    --ring: 211 100% 45%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 116 70% 64%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 0 0% 10%;
 
-    --success: 158 58% 44%;
-    --success-foreground: 0 0% 100%;
+    --success: 116 70% 64%;
+    --success-foreground: 0 0% 10%;
 
-    --sidebar-background: 223 27% 11%;
-    --sidebar-foreground: 214 24% 93%;
-    --sidebar-primary: 208 86% 64%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 220 18% 17%;
-    --sidebar-accent-foreground: 214 24% 93%;
-    --sidebar-border: 220 14% 24%;
-    --sidebar-ring: 208 86% 64%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 240 5% 16%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 5% 16%;
+    --sidebar-ring: 160 84% 39%;
   }
 }
 

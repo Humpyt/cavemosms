@@ -180,9 +180,9 @@ export default function AnalyticsPage({ lang, settings, onUpdate }: AnalyticsPag
 
   if (isLoading) {
     return (
-      <div className="px-4 pb-20 pt-2">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-display font-bold">{t('analytics', lang)}</h1>
+      <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('analytics', lang)}</h1>
           <ThemeToggle settings={settings} onUpdate={onUpdate} />
         </div>
         <StatCardsSkeleton />
@@ -192,68 +192,57 @@ export default function AnalyticsPage({ lang, settings, onUpdate }: AnalyticsPag
   }
 
   return (
-    <div className="px-4 pb-20 pt-2">
-      <section className="mb-4 overflow-hidden rounded-[1.75rem] border border-border/70 bg-card px-4 py-4 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(8,15,28,0.92))] dark:shadow-[0_24px_60px_rgba(2,6,23,0.32)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground dark:text-sky-200/70">
-              Signal Board
-            </p>
-            <h1 className="mt-1 text-2xl font-display font-bold dark:text-slate-50">{t('analytics', lang)}</h1>
-            <p className="mt-1 max-w-[16rem] text-sm text-muted-foreground dark:text-slate-300">
-              Read delivery outcomes, inspect failed runs, and export campaign evidence.
-            </p>
-          </div>
+    <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('analytics', lang)}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Campaign insights & history.</p>
+        </div>
+        <div className="flex items-center gap-3">
           <ThemeToggle settings={settings} onUpdate={onUpdate} />
         </div>
-      </section>
+      </div>
 
-      <div className="mb-6 grid grid-cols-3 gap-2">
+      <div className="mb-8 grid grid-cols-3 gap-3">
         {statCards.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="dark:border-white/10">
-            <CardContent className="p-3 text-center">
-              <div className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full ${bg}`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-              <p className="text-lg font-display font-bold dark:text-slate-50">{value}</p>
-              <p className="text-[10px] text-muted-foreground dark:text-slate-400">{label}</p>
-            </CardContent>
-          </Card>
+          <div key={label} className="bg-card rounded-[24px] border border-border/50 p-4 text-center hover:border-border transition-colors">
+            <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[14px] ${bg}`}>
+              <Icon className={`h-5 w-5 ${color}`} />
+            </div>
+            <p className="text-xl font-bold text-foreground">{value}</p>
+            <p className="mt-0.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+          </div>
         ))}
       </div>
 
-      <Card className="mb-6 dark:border-white/10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-display">Last 7 Days</CardTitle>
-        </CardHeader>
-        <CardContent className="p-2">
+      <div className="bg-card rounded-[32px] border border-border/50 p-5 mb-8">
+        <h2 className="text-[14px] font-bold text-foreground mb-4">Last 7 Days</h2>
+        <div className="h-[200px] w-full">
           {total > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="day" tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
-                <Tooltip />
-                <Bar dataKey="sent" fill="hsl(152, 60%, 42%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="failed" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fontWeight: 600 }} tickLine={false} axisLine={false} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 11, fontWeight: 600 }} tickLine={false} axisLine={false} className="text-muted-foreground" />
+                <Tooltip cursor={{ fill: 'hsl(var(--secondary))' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="sent" fill="hsl(var(--success))" radius={[6, 6, 0, 0]} barSize={12} />
+                <Bar dataKey="failed" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} barSize={12} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-[180px] items-center justify-center text-sm text-muted-foreground">
-              <BarChart3 className="mr-2 h-8 w-8 opacity-30" />
-              No data yet
+            <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
+              <BarChart3 className="mb-2 h-8 w-8 opacity-20" />
+              <span className="text-xs font-medium">No activity yet</span>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-display font-semibold">{t('recentBatches', lang)}</h2>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-[18px] font-bold text-foreground">{t('recentBatches', lang)}</h2>
         {batches.length > 0 && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1 text-[10px] dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]"
+          <button
+            className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold hover:bg-secondary/80 transition-colors"
             onClick={async () => {
               try {
                 await exportAnalyticsReport(batches);
@@ -263,64 +252,66 @@ export default function AnalyticsPage({ lang, settings, onUpdate }: AnalyticsPag
               }
             }}
           >
-            <Download className="h-3 w-3" />
-            Export CSV
-          </Button>
+            <Download className="h-3.5 w-3.5" />
+            Export
+          </button>
         )}
       </div>
 
-      <div className="mb-3 flex gap-2">
+      <div className="mb-4 flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search messages..."
+            placeholder="Search campaigns..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="h-8 pl-8 text-xs"
+            className="h-12 pl-10 rounded-[20px] bg-secondary border-0 text-[14px] shadow-none"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-8 w-[110px] text-xs">
+          <SelectTrigger className="h-12 w-[130px] rounded-[20px] bg-secondary border-0 text-[14px] font-medium">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="sending">Sending</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
+          <SelectContent className="rounded-2xl">
+            <SelectItem value="all" className="rounded-xl">All</SelectItem>
+            <SelectItem value="completed" className="rounded-xl">Completed</SelectItem>
+            <SelectItem value="sending" className="rounded-xl">Sending</SelectItem>
+            <SelectItem value="scheduled" className="rounded-xl">Scheduled</SelectItem>
+            <SelectItem value="pending" className="rounded-xl">Pending</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filteredBatches.length === 0 ? (
-          <Card className="border-dashed dark:border-white/10">
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">{t('noMessages', lang)}</CardContent>
-          </Card>
+          <div className="bg-card rounded-[24px] border border-dashed border-border/80 p-8 text-center text-sm font-medium text-muted-foreground">
+            {t('noMessages', lang)}
+          </div>
         ) : (
           filteredBatches.slice(0, 10).map((batch) => (
-            <Card
+            <div
               key={batch.id}
-              className="cursor-pointer transition-colors hover:border-primary/30 dark:border-white/10 dark:hover:border-sky-400/30"
+              className="bg-card rounded-[24px] border border-border/50 p-4 cursor-pointer transition-colors hover:border-border"
               onClick={() => openBatchDetail(batch)}
             >
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium dark:text-slate-100">{batch.body}</p>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground dark:text-slate-400">
-                      {format(batch.createdAt, 'PPp')} · {batch.recipientCount} {t('recipients', lang)}
-                    </p>
-                  </div>
-                  <div className="ml-2 flex items-center gap-2">
-                    <span className="text-[10px] font-medium text-success">{batch.sentCount} sent</span>
-                    <span className="text-[10px] font-medium text-destructive">{batch.failedCount} failed</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 flex-1 pr-4">
+                  <p className="truncate text-[15px] font-bold text-foreground">{batch.body}</p>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                    {format(batch.createdAt, 'PPp')} <span className="mx-1">•</span> {batch.recipientCount} {t('recipients', lang)}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md bg-success/10 text-[10px] font-bold text-success">{batch.sentCount} sent</span>
+                    {batch.failedCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-md bg-destructive/10 text-[10px] font-bold text-destructive">{batch.failedCount} fail</span>
+                    )}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
           ))
         )}
       </div>

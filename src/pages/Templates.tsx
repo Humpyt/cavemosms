@@ -75,27 +75,35 @@ export default function TemplatesPage({ lang }: TemplatesPageProps) {
   }
 
   return (
-    <div className="pb-20 px-4 pt-2">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-display font-bold">{t('templates', lang)}</h1>
-        <Button size="sm" className="gap-1.5" onClick={openNew}>
-          <Plus className="w-4 h-4" />
-          {t('addTemplate', lang)}
-        </Button>
+    <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('templates', lang)}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Saved campaign messages.</p>
+        </div>
+        <button 
+          onClick={openNew}
+          className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <AnimatePresence>
           {templates.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">{t('noTemplates', lang)}</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={openNew}>
-                  {t('addTemplate', lang)}
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="bg-card rounded-[24px] border border-dashed border-border/80 flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
+                <FileText className="h-5 w-5 opacity-50" />
+              </div>
+              <p className="text-sm font-medium mb-3">{t('noTemplates', lang)}</p>
+              <button 
+                className="px-6 py-2.5 rounded-full bg-secondary text-secondary-foreground text-sm font-bold transition-colors hover:bg-secondary/80" 
+                onClick={openNew}
+              >
+                {t('addTemplate', lang)}
+              </button>
+            </div>
           ) : (
             templates.map((tmpl) => (
               <motion.div
@@ -103,39 +111,39 @@ export default function TemplatesPage({ lang }: TemplatesPageProps) {
                 layout
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, scale: 0.95 }}
               >
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <p className="text-sm font-semibold">{tmpl.name}</p>
-                      <div className="flex gap-0.5">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => duplicate(tmpl)}>
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tmpl)}>
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove(tmpl.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
+                <div className="bg-card rounded-[24px] p-5 border border-border/50 hover:border-border transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <p className="text-[16px] font-bold text-foreground">{tmpl.name}</p>
+                    <div className="flex gap-1 bg-secondary rounded-full p-1">
+                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-background hover:text-foreground transition-all" onClick={() => duplicate(tmpl)}>
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-background hover:text-foreground transition-all" onClick={() => openEdit(tmpl)}>
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-all" onClick={() => remove(tmpl.id!)}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-3">{tmpl.body}</p>
-                    {tmpl.placeholders.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {tmpl.placeholders.map((p) => (
-                          <span
-                            key={p}
-                            className="px-2 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium"
-                          >
-                            {`{${p}}`}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground line-clamp-3 leading-relaxed mb-3">
+                    {tmpl.body}
+                  </p>
+                  {tmpl.placeholders.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/50">
+                      {tmpl.placeholders.map((p) => (
+                        <span
+                          key={p}
+                          className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold uppercase tracking-wider"
+                        >
+                          +{p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </motion.div>
             ))
           )}
@@ -143,42 +151,47 @@ export default function TemplatesPage({ lang }: TemplatesPageProps) {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display">
+        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[32px] p-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl font-bold">
               {editing ? t('edit', lang) : t('addTemplate', lang)}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Input
               placeholder={t('templateName', lang)}
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
+              className="h-14 rounded-2xl bg-secondary border-0 text-[15px] px-4"
             />
-            <div>
+            <div className="bg-secondary rounded-[24px] p-2 focus-within:ring-1 focus-within:ring-primary transition-all">
               <Textarea
                 placeholder={t('messageBody', lang)}
                 value={formBody}
                 onChange={(e) => setFormBody(e.target.value)}
-                className="min-h-[100px] resize-none"
+                className="min-h-[140px] resize-none bg-transparent border-0 focus-visible:ring-0 p-3 text-[15px]"
               />
-              <div className="flex gap-1 mt-1.5">
+              <div className="flex gap-2 mt-2 p-2 border-t border-border/30 overflow-x-auto no-scrollbar">
                 {['name', 'phone', 'location'].map((p) => (
                   <button
                     key={p}
                     onClick={() => setFormBody((prev) => prev + `{${p}}`)}
-                    className="px-2 py-0.5 rounded-sm bg-secondary text-secondary-foreground text-[10px] font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="px-3 py-1.5 rounded-full bg-background text-foreground text-[11px] font-bold shadow-sm hover:text-primary transition-colors whitespace-nowrap shrink-0"
                   >
-                    {`{${p}}`}
+                    +{p}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={save} disabled={!formName.trim() || !formBody.trim()}>
+          <DialogFooter className="mt-6">
+            <button 
+              onClick={save} 
+              disabled={!formName.trim() || !formBody.trim()}
+              className="w-full h-14 rounded-full bg-primary text-primary-foreground font-bold text-[15px] disabled:opacity-50"
+            >
               {t('save', lang)}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
