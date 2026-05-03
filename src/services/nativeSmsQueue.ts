@@ -11,6 +11,17 @@ function isFutureDate(value: Date | undefined): boolean {
 }
 
 function normalizeBatchStatus(batch: MessageBatch, logs: MessageLog[]): MessageBatch['status'] {
+  if (batch.status === 'cancelled') {
+    return 'cancelled';
+  }
+
+  if (batch.status === 'paused') {
+    if (logs.length > 0 && logs.every((log) => TERMINAL_STATUSES.includes(log.status))) {
+      return 'completed';
+    }
+    return 'paused';
+  }
+
   if (logs.length === 0) {
     return isFutureDate(batch.scheduledAt) ? 'scheduled' : 'pending';
   }
@@ -161,7 +172,14 @@ export async function processNativeSmsQueue(
   const dueLogs = pendingLogs
     .filter((log) => {
       const batch = batchMap.get(log.batchId);
-      return batch && batch.status !== 'completed' && isDue(batch) && isRetryDue(log);
+      return (
+        batch &&
+        batch.status !== 'completed' &&
+        batch.status !== 'cancelled' &&
+        batch.status !== 'paused' &&
+        isDue(batch) &&
+        isRetryDue(log)
+      );
     })
     .sort((left, right) => {
       if (left.batchId !== right.batchId) {
@@ -171,12 +189,17 @@ export async function processNativeSmsQueue(
       return (left.id || 0) - (right.id || 0);
     });
 
+  const minGapMs = Math.max(1000, sendDelayMs);
+  let nextDueAt = Date.now();
+
   for (const log of dueLogs) {
     affectedBatchIds.add(log.batchId);
 
     try {
       const requestId = `log-${log.id}-${Date.now()}`;
       const retryCount = getRetryCount(log);
+      const dueAt = Math.max(Date.now(), nextDueAt);
+      nextDueAt = dueAt + minGapMs;
 
       await NativeSms.enqueueNativeQueue({
         requestId,
@@ -185,7 +208,8 @@ export async function processNativeSmsQueue(
         phoneNumber: log.contactPhone,
         message: log.body,
         subscriptionId: subscriptionId ?? undefined,
-        dueAt: Date.now(),
+        dueAt,
+        minGapMs,
         retryCount,
         maxRetries,
       });
@@ -204,20 +228,28 @@ export async function processNativeSmsQueue(
         error instanceof Error ? error.message : 'Native SMS send failed.'
       );
     }
-
-    if (sendDelayMs > 0) {
-      await new Promise((resolve) => globalThis.setTimeout(resolve, sendDelayMs));
-    }
   }
 
   if (dueLogs.length > 0) {
     try {
       await NativeSms.processNativeQueueNow({
         subscriptionId: subscriptionId ?? undefined,
-        maxToProcess: dueLogs.length,
+        maxToProcess: 1,
       });
     } catch {
       // Native queue is persisted; it can be processed in a later cycle.
+    }
+  } else {
+    try {
+      const queueStats = await NativeSms.getNativeQueueStats();
+      if (queueStats.due > 0) {
+        await NativeSms.processNativeQueueNow({
+          subscriptionId: subscriptionId ?? undefined,
+          maxToProcess: 1,
+        });
+      }
+    } catch {
+      // Best effort processing only.
     }
   }
 
@@ -226,6 +258,63 @@ export async function processNativeSmsQueue(
   }
 
   return { affectedBatchIds };
+}
+
+export async function pauseBatch(batchId: number): Promise<void> {
+  await NativeSms.removeBatchFromNativeQueue({ batchId });
+
+  const logs = await db.messageLogs.where('batchId').equals(batchId).toArray();
+  await Promise.all(
+    logs
+      .filter((log) => log.status === 'pending' || log.status === 'sending')
+      .map((log) =>
+        db.messageLogs.update(log.id!, {
+          status: 'pending',
+          nativeRequestId: undefined,
+          nextRetryAt: undefined,
+          error: 'Paused by user.',
+        })
+      )
+  );
+
+  await db.batches.update(batchId, {
+    status: 'paused',
+    completedAt: undefined,
+  });
+}
+
+export async function resumeBatch(batchId: number): Promise<void> {
+  const batch = await db.batches.get(batchId);
+  const status: MessageBatch['status'] =
+    batch?.scheduledAt && new Date(batch.scheduledAt).getTime() > Date.now() ? 'scheduled' : 'pending';
+
+  await db.batches.update(batchId, {
+    status,
+    completedAt: undefined,
+  });
+}
+
+export async function stopBatch(batchId: number): Promise<void> {
+  await NativeSms.removeBatchFromNativeQueue({ batchId });
+
+  const logs = await db.messageLogs.where('batchId').equals(batchId).toArray();
+  await Promise.all(
+    logs
+      .filter((log) => log.status === 'pending' || log.status === 'sending')
+      .map((log) =>
+        db.messageLogs.update(log.id!, {
+          status: 'failed',
+          nativeRequestId: undefined,
+          nextRetryAt: undefined,
+          error: 'Cancelled by user.',
+        })
+      )
+  );
+
+  await db.batches.update(batchId, {
+    status: 'cancelled',
+    completedAt: new Date(),
+  });
 }
 
 export async function handleNativeSmsStatusEvent(

@@ -12,6 +12,7 @@ function run(command, cwd = rootDir) {
 run('node ./scripts/prepare-android-build.mjs');
 run('npm run build');
 run('npx cap sync android');
+run('node ./scripts/verify-android-web-assets.mjs');
 run('.\\gradlew.bat --stop', androidDir);
 run('.\\gradlew.bat assembleDebug --rerun-tasks', androidDir);
 run('node ./scripts/write-android-build-manifest.mjs');

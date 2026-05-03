@@ -42,6 +42,7 @@ export interface NativeSmsStatusEvent {
 
 export interface NativeQueueEnqueueOptions extends NativeSmsSendOptions {
   dueAt?: number;
+  minGapMs?: number;
   retryCount?: number;
   maxRetries?: number;
 }
@@ -61,6 +62,7 @@ export interface NativeSmsPlugin {
   processNativeQueueNow(options?: { subscriptionId?: number; maxToProcess?: number }): Promise<{ processed: number; queued: number }>;
   getNativeQueueStats(): Promise<NativeQueueStats>;
   clearNativeQueue(): Promise<{ cleared: boolean }>;
+  removeBatchFromNativeQueue(options: { batchId: number }): Promise<{ removed: number; queued: number }>;
   drainNativeEvents(): Promise<{ events: NativeSmsStatusEvent[] }>;
   addListener(
     eventName: 'smsStatusChanged',

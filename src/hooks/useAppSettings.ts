@@ -9,6 +9,7 @@ export function useAppSettings() {
     sendDelay: 2000,
     maxRetries: 2,
     preferredSubscriptionId: null,
+    customVariables: [],
   });
   const [loading, setLoading] = useState(true);
 

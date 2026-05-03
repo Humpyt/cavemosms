@@ -25,9 +25,11 @@ public final class NativeSmsQueueScheduler {
     public static final String PREFS_NAME = "native_sms_queue";
     public static final String PREFS_QUEUE_KEY = "queue_json";
     public static final String PREFS_EVENTS_KEY = "events_json";
+    public static final String PREFS_LAST_SENT_AT_KEY = "last_sent_at_ms";
     public static final String PERIODIC_WORK_NAME = "native_sms_queue_periodic";
     public static final String IMMEDIATE_WORK_NAME = "native_sms_queue_immediate";
     private static final long BASE_RETRY_DELAY_MS = 15000L;
+    private static final long DEFAULT_MIN_SEND_GAP_MS = 4000L;
     private static final Object LOCK = new Object();
 
     private NativeSmsQueueScheduler() {}
@@ -68,6 +70,7 @@ public final class NativeSmsQueueScheduler {
 
             long now = System.currentTimeMillis();
             int processed = 0;
+            long lastSentAt = loadLastSentAt(context);
 
             JSONArray queue = loadQueue(context);
             JSONArray remaining = new JSONArray();
@@ -80,6 +83,18 @@ public final class NativeSmsQueueScheduler {
 
                 long dueAt = item.optLong("dueAt", 0L);
                 if (dueAt > now || processed >= maxToProcess) {
+                    remaining.put(item);
+                    continue;
+                }
+
+                long minGapMs = Math.max(1000L, item.optLong("minGapMs", DEFAULT_MIN_SEND_GAP_MS));
+                long earliestNextSend = lastSentAt + minGapMs;
+                if (lastSentAt > 0L && now < earliestNextSend) {
+                    try {
+                        item.put("dueAt", earliestNextSend);
+                    } catch (Exception ignored) {
+                        // Keep item if dueAt mutation fails.
+                    }
                     remaining.put(item);
                     continue;
                 }
@@ -99,6 +114,8 @@ public final class NativeSmsQueueScheduler {
                         context,
                         buildEventPayload(requestId, phoneNumber, "sent", logId, batchId, null, 0)
                     );
+                    lastSentAt = System.currentTimeMillis();
+                    saveLastSentAt(context, lastSentAt);
                     processed += 1;
                 } catch (Exception sendError) {
                     int nextRetryCount = retryCount + 1;
@@ -162,6 +179,31 @@ public final class NativeSmsQueueScheduler {
         return events;
     }
 
+    public static int removeBatchFromQueue(Context context, int batchId) {
+        synchronized (LOCK) {
+            JSONArray queue = loadQueue(context);
+            JSONArray remaining = new JSONArray();
+            int removed = 0;
+
+            for (int index = 0; index < queue.length(); index++) {
+                JSONObject item = queue.optJSONObject(index);
+                if (item == null) {
+                    continue;
+                }
+
+                Integer itemBatchId = item.isNull("batchId") ? null : item.optInt("batchId");
+                if (itemBatchId != null && itemBatchId == batchId) {
+                    removed += 1;
+                    continue;
+                }
+                remaining.put(item);
+            }
+
+            saveQueue(context, remaining);
+            return removed;
+        }
+    }
+
     private static JSONArray loadEvents(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String raw = prefs.getString(PREFS_EVENTS_KEY, "[]");
@@ -170,6 +212,16 @@ public final class NativeSmsQueueScheduler {
         } catch (Exception ignored) {
             return new JSONArray();
         }
+    }
+
+    private static long loadLastSentAt(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getLong(PREFS_LAST_SENT_AT_KEY, 0L);
+    }
+
+    private static void saveLastSentAt(Context context, long value) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putLong(PREFS_LAST_SENT_AT_KEY, value).apply();
     }
 
     private static void saveEvents(Context context, JSONArray events) {

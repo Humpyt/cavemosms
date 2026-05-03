@@ -1,197 +1,287 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { t } from '@/lib/i18n';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/db';
 import type { MessageTemplate } from '@/lib/types';
-import { t } from '@/lib/i18n';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, FileText, Edit2, Trash2, Copy } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface TemplatesPageProps {
   lang: string;
 }
 
+const DEFAULT_TEMPLATES: Array<Pick<MessageTemplate, 'name' | 'body'>> = [
+  {
+    name: 'Client Follow-Up',
+    body: 'Hi {name}, just following up on your request. Reply YES and we will call you today.',
+  },
+  {
+    name: 'Payment Reminder',
+    body: 'Hello {name}, this is a reminder that your payment is due on Friday. Thank you.',
+  },
+];
+
 export default function TemplatesPage({ lang }: TemplatesPageProps) {
+  const { settings, update } = useAppSettings();
+  const templatesQuery = useLiveQuery(() => db.templates.orderBy('updatedAt').reverse().toArray(), []);
+  const templates = useMemo(() => templatesQuery ?? [], [templatesQuery]);
+  const [customVariableKey, setCustomVariableKey] = useState('');
+  const [customVariableValue, setCustomVariableValue] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<MessageTemplate | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formBody, setFormBody] = useState('');
+  const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
+  const [templateName, setTemplateName] = useState('');
+  const [templateBody, setTemplateBody] = useState('');
+  const customVariables = useMemo(() => settings.customVariables ?? [], [settings.customVariables]);
 
-  const templates = useLiveQuery(() => db.templates.toArray()) || [];
+  useEffect(() => {
+    if (templatesQuery === undefined || templatesQuery.length > 0) return;
 
-  function openNew() {
-    setEditing(null);
-    setFormName('');
-    setFormBody('');
-    setDialogOpen(true);
-  }
-
-  function openEdit(tmpl: MessageTemplate) {
-    setEditing(tmpl);
-    setFormName(tmpl.name);
-    setFormBody(tmpl.body);
-    setDialogOpen(true);
-  }
-
-  async function save() {
-    const placeholders = (formBody.match(/\{(\w+)\}/g) || []).map((p) => p.replace(/[{}]/g, ''));
     const now = new Date();
+    void db.templates.bulkAdd(
+      DEFAULT_TEMPLATES.map((template) => ({
+        name: template.name,
+        body: template.body,
+        placeholders: extractPlaceholders(template.body),
+        createdAt: now,
+        updatedAt: now,
+      }))
+    );
+  }, [templatesQuery]);
 
-    if (editing) {
-      await db.templates.update(editing.id!, {
-        name: formName,
-        body: formBody,
-        placeholders,
+  function normalizeVariableKey(value: string): string {
+    return value.trim().replace(/[{}]/g, '').replace(/\s+/g, '_');
+  }
+
+  async function addCustomVariable() {
+    const key = normalizeVariableKey(customVariableKey);
+    const value = customVariableValue.trim();
+    const builtInKeys = new Set(['name', 'phone', 'location']);
+    if (!key) {
+      toast({ title: 'Invalid variable', description: 'Variable key is required.' });
+      return;
+    }
+    if (builtInKeys.has(key.toLowerCase())) {
+      toast({ title: 'Reserved variable', description: 'This key is already used by a built-in variable.' });
+      return;
+    }
+    if (customVariables.some((item) => item.key.toLowerCase() === key.toLowerCase())) {
+      toast({ title: 'Duplicate variable', description: 'This custom variable key already exists.' });
+      return;
+    }
+    await update({ customVariables: [...customVariables, { key, value }] });
+    setCustomVariableKey('');
+    setCustomVariableValue('');
+  }
+
+  async function removeCustomVariable(key: string) {
+    await update({ customVariables: customVariables.filter((item) => item.key !== key) });
+  }
+
+  function extractPlaceholders(body: string): string[] {
+    const matches = body.match(/\{([a-zA-Z0-9_]+)\}/g) ?? [];
+    return Array.from(new Set(matches.map((match) => match.replace(/[{}]/g, '').trim()).filter(Boolean)));
+  }
+
+  function openCreateDialog() {
+    setEditingTemplateId(null);
+    setTemplateName('');
+    setTemplateBody('');
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(template: MessageTemplate) {
+    setEditingTemplateId(template.id ?? null);
+    setTemplateName(template.name);
+    setTemplateBody(template.body);
+    setDialogOpen(true);
+  }
+
+  async function saveTemplate() {
+    const name = templateName.trim();
+    const body = templateBody.trim();
+    if (!name || !body) {
+      toast({ title: 'Missing fields', description: 'Template name and body are required.' });
+      return;
+    }
+
+    const now = new Date();
+    if (editingTemplateId) {
+      await db.templates.update(editingTemplateId, {
+        name,
+        body,
+        placeholders: extractPlaceholders(body),
         updatedAt: now,
       });
+      toast({ title: 'Template updated' });
     } else {
       await db.templates.add({
-        name: formName,
-        body: formBody,
-        placeholders,
+        name,
+        body,
+        placeholders: extractPlaceholders(body),
         createdAt: now,
         updatedAt: now,
       });
+      toast({ title: 'Template created' });
     }
+
     setDialogOpen(false);
   }
 
-  async function duplicate(tmpl: MessageTemplate) {
-    await db.templates.add({
-      name: `${tmpl.name} (copy)`,
-      body: tmpl.body,
-      placeholders: tmpl.placeholders,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  }
-
-  async function remove(id: number) {
-    await db.templates.delete(id);
+  async function deleteTemplate(templateId: number) {
+    await db.templates.delete(templateId);
+    toast({ title: 'Template deleted' });
   }
 
   return (
-    <div className="px-5 pb-32 pt-8 min-h-screen bg-background">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('templates', lang)}</h1>
-          <p className="text-sm text-muted-foreground mt-1">Saved campaign messages.</p>
-        </div>
-        <button 
-          onClick={openNew}
-          className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
+    <div className="min-h-screen bg-background px-5 pb-5 pt-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('templates', lang)}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Create and manage your reusable message templates.</p>
       </div>
 
-      <div className="space-y-3">
-        <AnimatePresence>
-          {templates.length === 0 ? (
-            <div className="bg-card rounded-[24px] border border-dashed border-border/80 flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                <FileText className="h-5 w-5 opacity-50" />
+      <div className="flex max-h-[calc(100vh-170px)] flex-col">
+        <div className="mb-3">
+          <Button type="button" onClick={openCreateDialog} className="h-11 rounded-full px-5 font-semibold">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Template
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pb-5 pr-1">
+          <div className="space-y-3">
+            {templates.length === 0 && (
+              <div className="rounded-[24px] border border-dashed border-border/70 bg-card p-6 text-sm text-muted-foreground">
+                No templates yet.
               </div>
-              <p className="text-sm font-medium mb-3">{t('noTemplates', lang)}</p>
-              <button 
-                className="px-6 py-2.5 rounded-full bg-secondary text-secondary-foreground text-sm font-bold transition-colors hover:bg-secondary/80" 
-                onClick={openNew}
-              >
-                {t('addTemplate', lang)}
-              </button>
-            </div>
-          ) : (
-            templates.map((tmpl) => (
+            )}
+            {templates.map((tmpl) => (
               <motion.div
                 key={tmpl.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                className="rounded-[24px] border border-border/50 bg-card p-5"
               >
-                <div className="bg-card rounded-[24px] p-5 border border-border/50 hover:border-border transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <p className="text-[16px] font-bold text-foreground">{tmpl.name}</p>
-                    <div className="flex gap-1 bg-secondary rounded-full p-1">
-                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-background hover:text-foreground transition-all" onClick={() => duplicate(tmpl)}>
-                        <Copy className="w-4 h-4" />
-                      </button>
-                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-background hover:text-foreground transition-all" onClick={() => openEdit(tmpl)}>
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-all" onClick={() => remove(tmpl.id!)}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                <div className="mb-3 flex items-start justify-between">
+                  <p className="text-[16px] font-bold text-foreground">{tmpl.name}</p>
+                  <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground line-clamp-3 leading-relaxed mb-3">
-                    {tmpl.body}
-                  </p>
-                  {tmpl.placeholders.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border/50">
-                      {tmpl.placeholders.map((p) => (
-                        <span
-                          key={p}
-                          className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-[10px] font-bold uppercase tracking-wider"
-                        >
-                          +{p}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                </div>
+                <p className="mb-3 text-sm font-medium leading-relaxed text-muted-foreground">{tmpl.body}</p>
+                <div className="border-t border-border/50 pt-3">
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {tmpl.placeholders.map((p) => (
+                      <span
+                        key={p}
+                        className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-secondary-foreground"
+                      >
+                        +{p}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-full"
+                      onClick={() => openEditDialog(tmpl)}
+                    >
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
+                      onClick={() => void deleteTemplate(tmpl.id!)}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
-            ))
+            ))}
+          </div>
+        </div>
+
+        <div
+          className="sticky bottom-0 mt-3 rounded-[24px] border border-border/50 bg-card p-5 shadow-[0_-8px_30px_hsl(var(--background)/0.92)]"
+          style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+        >
+          <p className="text-sm font-bold text-foreground">Custom Variables</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create variables here and use them in messages as {'{variable_key}'}.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Input
+              placeholder="Variable key (e.g promo_code)"
+              value={customVariableKey}
+              onChange={(event) => setCustomVariableKey(event.target.value)}
+            />
+            <Input
+              placeholder="Value"
+              value={customVariableValue}
+              onChange={(event) => setCustomVariableValue(event.target.value)}
+            />
+            <Button type="button" variant="outline" onClick={() => void addCustomVariable()} disabled={!customVariableKey.trim()}>
+              Add
+            </Button>
+          </div>
+          {customVariables.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {customVariables.map((variable) => (
+                <button
+                  key={variable.key}
+                  type="button"
+                  onClick={() => void removeCustomVariable(variable.key)}
+                  className="rounded-full border border-border bg-secondary px-3 py-1.5 text-[11px] font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
+                >
+                  {variable.key} = {variable.value || '""'} x
+                </button>
+              ))}
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[32px] p-6">
-          <DialogHeader className="mb-4">
-            <DialogTitle className="text-xl font-bold">
-              {editing ? t('edit', lang) : t('addTemplate', lang)}
-            </DialogTitle>
+        <DialogContent className="rounded-[24px]">
+          <DialogHeader>
+            <DialogTitle>{editingTemplateId ? 'Edit Template' : 'Create Template'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Input
-              placeholder={t('templateName', lang)}
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              className="h-14 rounded-2xl bg-secondary border-0 text-[15px] px-4"
+              placeholder="Template name"
+              value={templateName}
+              onChange={(event) => setTemplateName(event.target.value)}
             />
-            <div className="bg-secondary rounded-[24px] p-2 focus-within:ring-1 focus-within:ring-primary transition-all">
-              <Textarea
-                placeholder={t('messageBody', lang)}
-                value={formBody}
-                onChange={(e) => setFormBody(e.target.value)}
-                className="min-h-[140px] resize-none bg-transparent border-0 focus-visible:ring-0 p-3 text-[15px]"
-              />
-              <div className="flex gap-2 mt-2 p-2 border-t border-border/30 overflow-x-auto no-scrollbar">
-                {['name', 'phone', 'location'].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setFormBody((prev) => prev + `{${p}}`)}
-                    className="px-3 py-1.5 rounded-full bg-background text-foreground text-[11px] font-bold shadow-sm hover:text-primary transition-colors whitespace-nowrap shrink-0"
-                  >
-                    +{p}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Textarea
+              placeholder="Template body"
+              className="min-h-[120px]"
+              value={templateBody}
+              onChange={(event) => setTemplateBody(event.target.value)}
+            />
           </div>
-          <DialogFooter className="mt-6">
-            <button 
-              onClick={save} 
-              disabled={!formName.trim() || !formBody.trim()}
-              className="w-full h-14 rounded-full bg-primary text-primary-foreground font-bold text-[15px] disabled:opacity-50"
-            >
-              {t('save', lang)}
-            </button>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void saveTemplate()}>
+              Save
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

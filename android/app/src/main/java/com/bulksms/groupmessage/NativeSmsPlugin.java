@@ -166,6 +166,7 @@ public class NativeSmsPlugin extends Plugin {
         Integer retryCount = call.getInt("retryCount");
         Integer maxRetries = call.getInt("maxRetries");
         Long dueAt = call.getLong("dueAt");
+        Long minGapMs = call.getLong("minGapMs");
 
         if (phoneNumber.isEmpty()) {
             call.reject("phoneNumber is required.");
@@ -193,6 +194,7 @@ public class NativeSmsPlugin extends Plugin {
             item.put("retryCount", retryCount == null ? 0 : retryCount);
             item.put("maxRetries", maxRetries == null ? 2 : maxRetries);
             item.put("dueAt", dueAt == null ? System.currentTimeMillis() : dueAt);
+            item.put("minGapMs", minGapMs == null ? 2000L : Math.max(1000L, minGapMs));
             queue.put(item);
             saveQueue(queue);
             NativeSmsQueueScheduler.scheduleImmediate(getContext());
@@ -214,53 +216,13 @@ public class NativeSmsPlugin extends Plugin {
 
         Integer maxToProcess = call.getInt("maxToProcess");
         int maxProcessCount = maxToProcess == null || maxToProcess <= 0 ? 100 : maxToProcess;
-        long now = System.currentTimeMillis();
-        int processed = 0;
-
         try {
+            int processed = NativeSmsQueueScheduler.processDueQueue(getContext(), Math.max(1, maxProcessCount));
             JSONArray queue = loadQueue();
-            JSONArray remaining = new JSONArray();
-
-            for (int index = 0; index < queue.length(); index++) {
-                JSONObject item = queue.getJSONObject(index);
-                long dueAt = item.optLong("dueAt", 0L);
-                if (dueAt > now || processed >= maxProcessCount) {
-                    remaining.put(item);
-                    continue;
-                }
-
-                String requestId = item.optString("requestId", "");
-                String phoneNumber = trim(item.optString("phoneNumber", ""));
-                String message = trim(item.optString("message", ""));
-                Integer logId = item.isNull("logId") ? null : item.optInt("logId");
-                Integer batchId = item.isNull("batchId") ? null : item.optInt("batchId");
-                Integer subscriptionId = item.isNull("subscriptionId") ? null : item.optInt("subscriptionId");
-                int retryCount = item.optInt("retryCount", 0);
-                int maxRetries = item.optInt("maxRetries", 2);
-
-                try {
-                    sendSmsInternal(phoneNumber, message, requestId, logId, batchId, subscriptionId);
-                    processed += 1;
-                } catch (Exception sendError) {
-                    int nextRetryCount = retryCount + 1;
-                    if (nextRetryCount > maxRetries) {
-                        JSObject payload = buildNativeQueueFailurePayload(requestId, phoneNumber, logId, batchId, sendError.getMessage());
-                        persistNativeEvent(payload);
-                        notifyListeners("smsStatusChanged", payload, true);
-                    } else {
-                        item.put("retryCount", nextRetryCount);
-                        item.put("dueAt", now + computeRetryDelayMs(nextRetryCount));
-                        remaining.put(item);
-                    }
-                }
-            }
-
-            saveQueue(remaining);
-            NativeSmsQueueScheduler.scheduleImmediate(getContext());
 
             JSObject response = new JSObject();
             response.put("processed", processed);
-            response.put("queued", remaining.length());
+            response.put("queued", queue.length());
             call.resolve(response);
         } catch (Exception exception) {
             call.reject("Failed to process native queue.", exception);
@@ -295,6 +257,22 @@ public class NativeSmsPlugin extends Plugin {
         saveQueue(new JSONArray());
         JSObject response = new JSObject();
         response.put("cleared", true);
+        call.resolve(response);
+    }
+
+    @PluginMethod
+    public void removeBatchFromNativeQueue(PluginCall call) {
+        Integer batchId = call.getInt("batchId");
+        if (batchId == null || batchId <= 0) {
+            call.reject("batchId is required.");
+            return;
+        }
+
+        int removed = NativeSmsQueueScheduler.removeBatchFromQueue(getContext(), batchId);
+
+        JSObject response = new JSObject();
+        response.put("removed", removed);
+        response.put("queued", loadQueue().length());
         call.resolve(response);
     }
 

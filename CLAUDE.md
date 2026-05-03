@@ -4,76 +4,115 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BulkSMS is a React-based mobile-first PWA for sending bulk SMS messages. Built with Vite, TypeScript, shadcn-ui, Tailwind CSS, and Capacitor for mobile deployment.
+Camo SMS is a React-based PWA + Android app for sending bulk SMS messages via the device's native SMS capabilities. Built with Vite, TypeScript, shadcn-ui, Tailwind CSS, and Capacitor (Android). Uses license-gated activation against a remote licensing server.
 
 ## Commands
 
 ```sh
-npm run dev          # Start Vite dev server (port 8080)
-npm run build        # Production build to dist/
-npm run build:dev   # Development build
-npm run lint         # Run ESLint
-npm test             # Run Vitest tests
-npm run test:watch   # Watch mode for tests
+npm run dev                    # Vite dev server (port 8080)
+npm run build                  # Production build to dist/
+npm run build:dev              # Development-mode build
+npm run lint                   # ESLint
+npm test                       # Vitest (run)
+npm run test:watch             # Vitest (watch)
+npx cap sync android           # Sync web assets + plugins into Android project
+cd android && .\gradlew.bat :app:compileDebugJavaWithJavac   # Validate Java compile
 ```
+
+## Monorepo Structure
+
+Three distinct projects live side-by-side:
+
+| Directory | Purpose |
+|-----------|---------|
+| `src/` (root) | Main PWA/Android app — React + Capacitor |
+| `licensing-platform/` | Node.js Express backend for license activation (API at `uglive.io`) |
+| `website/` | Standalone Vite project for the product landing page |
+| `android/` | Capacitor Android host + native `NativeSmsPlugin` Java code |
 
 ## Architecture
 
+### Launch Flow
+1. `App.tsx` renders `QueryClientProvider` + `TooltipProvider` wrapper
+2. `AppContent` waits for settings (Dexie) and license check (fetch to licensing server)
+3. If `unauthorized` → renders `LicenseGate` (email/password → `POST /api/activate`)
+4. If `authorized` → renders `NativeSmsProvider` wrapping tab navigation
+
 ### Routing & Navigation
 - Single-page app with tab-based navigation via `BottomNav` component
-- Active tab stored in state (`activeTab: TabId`), renders corresponding page component
-- Pages: `Messages`, `Contacts`, `Templates`, `Analytics`, `Settings` in `src/pages/`
+- Active tab (`TabId`) stored in local state, renders the matching page component
+- Pages: `src/pages/Messages.tsx`, `Contacts.tsx`, `Templates.tsx`, `Analytics.tsx`, `Settings.tsx`
+- Page transitions via `framer-motion` `AnimatePresence`
 
 ### Database (Dexie/IndexedDB)
-- `src/lib/db.ts` exports a `db` instance connected to "BulkSMSApp"
+- `src/lib/db.ts` exports `db` connected to `"BulkSMSApp"` (v3 schema)
 - Tables: `contacts`, `groups`, `templates`, `batches`, `messageLogs`, `settings`
-- Settings helper functions: `getSettings()`, `updateSettings()` in `db.ts`
-- Types for all entities in `src/lib/types.ts`
+- `getSettings()` merges persisted settings with defaults; `updateSettings()` for partial updates
+- Types in `src/lib/types.ts`: `Contact`, `Group`, `MessageTemplate`, `MessageBatch`, `MessageLog`, `AppSettings`, `NativeSmsCapability`, etc.
+
+### Native SMS (Capacitor Plugin)
+SMS sending is done via a custom Capacitor plugin (`NativeSms`) backed by Android's `SmsManager`.
+
+**Frontend (TypeScript):**
+- `src/plugins/nativeSms.ts` — Capacitor plugin bridge definition (`registerPlugin<NativeSmsPlugin>('NativeSms')`)
+- `src/hooks/useNativeSms.tsx` — React context provider wrapping all native SMS state:
+  - Fetches device capability (dual-SIM, permissions, manufacturer)
+  - Polls native queue stats every 5s
+  - Syncs events from Android → updates IndexedDB `MessageLog` rows
+  - Calls `processNativeSmsQueue()` on interval and on window focus/resume
+  - Exposes `canSend`, `queuedCount`, `serviceStatus`, permission request helpers
+- `src/services/nativeSmsQueue.ts` — queue processing logic:
+  - Loads pending logs from Dexie, respects send delay between messages
+  - Pushes to native queue via `NativeSms.enqueueNativeQueue()`, then `processNativeQueueNow()`
+  - Handles retries with exponential backoff (15s × 2^attempt)
+  - Recovers stale `sending`-status logs after 2min timeout
+  - `handleNativeSmsStatusEvent()` maps native events back to Dexie rows
+- `src/components/SmsStatusBadge.tsx` — header badge showing SMS readiness
+
+**Android (Java):**
+- `NativeSmsPlugin.java` — Capacitor plugin class: `getStatus`, `requestSmsPermission`, `send`, `enqueueNativeQueue`, `processNativeQueueNow`, `drainNativeEvents`
+  - Sends SMS via `SmsManager` with multipart support and dual-SIM subscription selection
+  - Registers `BroadcastReceiver` for `SMS_SENT` intent — emits `smsStatusChanged` events to JS
+  - Persists events buffer in `SharedPreferences` for cross-process delivery
+- `NativeSmsQueueScheduler.java` — Android WorkManager integration: persistent JSON queue in `SharedPreferences`
+  - Periodic worker every 15min + immediate one-shot dispatch
+  - `processDueQueue()` sends eligible items, handles retries, persists events
+- `NativeSmsQueueWorker.java` — WorkManager `Worker` that calls `processDueQueue()`
+- `NativeSmsBootReceiver.java` — reschedules the periodic worker on device boot
+
+### Licensing
+- `src/hooks/useLicenseAuth.ts` — manages auth state machine (`checking → unauthorized → authorized`)
+  - Talks to `VITE_LICENSE_API_URL` (defaults to `https://uglive.io`)
+  - Stores token + user + license data in `localStorage`
+  - 5-minute heartbeat interval while authorized
+- `src/components/LicenseGate.tsx` — login form UI (email + password + activate button)
+- `licensing-platform/server.js` — Express backend:
+  - `POST /api/activate` — validates credentials, creates/updates device-bound license, returns JWT
+  - `GET /api/license/status` — verifies token validity
+  - `POST /api/license/heartbeat` — refreshes last-seen timestamp
+  - Uses `data.json` flat-file DB, bcrypt for passwords
+- `Settings` page has a logout button that calls `license.logout()`
 
 ### State Management
-- `useAppSettings` hook (`src/hooks/useAppSettings.ts`) for app settings (language, theme, sendDelay, maxRetries)
-- React Query (`@tanstack/react-query`) available for server-state management
-- Local state used for UI state (active tab, dialogs, onboarding)
+- `useAppSettings` hook (`src/hooks/useAppSettings.ts`) — app settings via Dexie (language, theme, sendDelay, maxRetries, preferredSubscriptionId)
+- `useNativeSms` hook (`src/hooks/useNativeSms.tsx`) — all SMS capability + queue state
+- `useLicenseAuth` hook — licensing auth state
+- React Query (`@tanstack/react-query`) available but largely unused (local-first architecture)
 
 ### i18n
-- Language passed as `lang` prop to pages
-- Implementation in `src/lib/i18n.ts`
-- Supported languages defined in `src/lib/types.ts` (`LANGUAGES` array)
+- `src/lib/i18n.ts` — translation map; `lang` prop passed to each page
+- Supported: English, Spanish, French, German, Portuguese, Arabic, Chinese, Hindi
 
-### UI Components
-- shadcn-ui components in `src/components/ui/` (Radix UI based)
-- Custom components in `src/components/` (BottomNav, ImportContactsDialog, OnboardingWalkthrough, etc.)
-- Tailwind CSS for styling with `tailwind.config.ts`
+## Coding Style
 
-### Mobile/PWA
-- Capacitor config in `capacitor.config.ts` (appId, webDir, server URL)
-- PWA manifest and service worker via `vite-plugin-pwa` in `vite.config.ts`
-- PWA icons in `public/pwa-icon-192.png` and `public/pwa-icon-512.png`
+- TypeScript + React function components, 2-space indentation
+- Components: `PascalCase`, hooks: `useXxx.ts`, services: `camelCase.ts`
+- Use `@/` path alias (maps to `src/`)
+- shadcn-ui components in `src/components/ui/`, custom components in `src/components/`
+- Tailwind CSS with `tailwind.config.ts` — use existing utility patterns
+- Run `npm run lint` before committing; Conventional Commits (`feat: ...`, `fix: ...`)
 
-### Key Libraries
-- `dexie` + `dexie-react-hooks` for IndexedDB
-- `react-hook-form` + `zod` + `@hookform/resolvers` for form validation
-- `framer-motion` for page transitions
-- `recharts` for analytics charts
-- `date-fns` for date manipulation
-- `next-themes` for dark/light mode theming
-- `bonjour-service` for mDNS/Bonjour SMS gateway discovery
+## Testing
 
-### SMS Gateway Integration
-SMS messages are sent via [android-sms-gateway](https://github.com/capcom6/android-sms-gateway) running on a local Android phone.
-
-**Services:**
-- `src/services/gatewayDiscovery.ts` — mDNS discovery on `_sms-gateway._tcp.local` using `bonjour-service`
-- `src/services/gatewayClient.ts` — REST API client for gateway (sendSms, getMessageStatus, getDeviceInfo)
-- `src/hooks/useGateway.ts` — central hook: gateway state, auto-discovery, ping polling (every 10s), offline queue
-- `src/components/GatewayStatusBadge.tsx` — online/offline indicator in nav bar
-
-**Data flow:**
-1. App starts → mDNS discovers gateway on local network → pings `/device` for status
-2. User sends message → if gateway online, POSTs to `/message` for each recipient → stores `gatewayMessageId` on each `MessageLog`
-3. Polls `GET /message/{id}` every 3s until all delivered (max 100 polls)
-4. If gateway offline → messages queued with `status: 'pending'` in IndexedDB → sent when gateway comes back online
-
-**Gateway credentials:** Stored in localStorage under key `bulksms_gateway` after mDNS discovery. The TXT record from the gateway contains `auth: base64(username:password)`.
-
-**Settings page:** SMS Gateway card shows device name, IP address, online/offline status, discover button, and test connection button.
+- Vitest with jsdom; test files in `src/test/` as `*.test.ts` / `*.test.tsx`
+- Focus tests on queue logic, CSV parsing, hooks, and other behavior boundaries

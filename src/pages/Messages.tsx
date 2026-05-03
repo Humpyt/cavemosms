@@ -1,15 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { format } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarIcon,
-  ChevronDown,
   ChevronRight,
-  ChevronUp,
   Clock,
+  Pause,
+  Play,
   Send,
+  Square,
   TimerReset,
   Users,
   SlidersHorizontal,
@@ -27,24 +28,47 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNativeSms } from '@/hooks/useNativeSms';
+import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/db';
 import { t } from '@/lib/i18n';
+import { pauseBatch, resumeBatch, stopBatch } from '@/services/nativeSmsQueue';
 import type { Contact, MessageBatch } from '@/lib/types';
 
 interface MessagesPageProps {
   lang: string;
 }
 
+const MESSAGE_DRAFT_KEY = 'bulksms_messages_draft_v1';
+const DRAFT_SAVE_DEBOUNCE_MS = 250;
+
+interface MessagesDraft {
+  messageBody: string;
+  selectedContactIds: number[];
+  selectedGroupIds: number[];
+  scheduleDate?: string;
+  recurringType: string;
+  showAdvanced: boolean;
+}
+
+interface CustomVariable {
+  key: string;
+  value: string;
+}
+
 export default function MessagesPage({ lang }: MessagesPageProps) {
+  const { settings } = useAppSettings();
   const [messageBody, setMessageBody] = useState('');
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [recurringType, setRecurringType] = useState<string>('none');
-  const [showSchedule, setShowSchedule] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
+  const [campaignActionBusy, setCampaignActionBusy] = useState(false);
+  const hasLoadedDraftRef = useRef(false);
 
   const {
     serviceStatus,
@@ -58,36 +82,159 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
   const contactsQuery = useLiveQuery(() => db.contacts.toArray());
   const groupsQuery = useLiveQuery(() => db.groups.toArray());
   const batchesQuery = useLiveQuery(() => db.batches.orderBy('createdAt').reverse().limit(20).toArray());
-  const templatesQuery = useLiveQuery(() => db.templates.toArray());
+  const templatesQuery = useLiveQuery(() => db.templates.orderBy('updatedAt').reverse().toArray(), []);
 
   const safeContacts = useMemo(() => contactsQuery ?? [], [contactsQuery]);
   const safeGroups = useMemo(() => groupsQuery ?? [], [groupsQuery]);
   const safeBatches = useMemo(() => batchesQuery ?? [], [batchesQuery]);
-  const safeTemplates = useMemo(() => templatesQuery ?? [], [templatesQuery]);
+  const quickTemplates = useMemo(() => templatesQuery ?? [], [templatesQuery]);
   const isLoading = contactsQuery === undefined || batchesQuery === undefined;
 
-  const activeContacts = safeContacts.filter((contact) => !contact.optedOut);
-  const selectedContacts = activeContacts.filter((contact) => {
-    if (selectedContactIds.includes(contact.id!)) return true;
-    if (selectedGroupIds.some((groupId) => contact.groupIds.includes(groupId))) return true;
-    return false;
-  });
+  const activeContacts = useMemo(
+    () => safeContacts.filter((contact) => !contact.optedOut),
+    [safeContacts]
+  );
+  const activeContactsByGroupId = useMemo(() => {
+    const map = new Map<number, number[]>();
+    for (const contact of activeContacts) {
+      if (!contact.id) continue;
+      for (const groupId of contact.groupIds) {
+        const existing = map.get(groupId);
+        if (existing) {
+          existing.push(contact.id);
+        } else {
+          map.set(groupId, [contact.id]);
+        }
+      }
+    }
+    return map;
+  }, [activeContacts]);
+  const selectedContactIdSet = useMemo(() => new Set(selectedContactIds), [selectedContactIds]);
+  const selectedGroupIdSet = useMemo(() => new Set(selectedGroupIds), [selectedGroupIds]);
+  const selectedContacts = useMemo(() => {
+    if (selectedContactIdSet.size === 0 && selectedGroupIdSet.size === 0) {
+      return [];
+    }
+    return activeContacts.filter((contact) => {
+      if (!contact.id) return false;
+      if (selectedContactIdSet.has(contact.id)) return true;
+      return contact.groupIds.some((groupId) => selectedGroupIdSet.has(groupId));
+    });
+  }, [activeContacts, selectedContactIdSet, selectedGroupIdSet]);
 
   const optedOutCount = safeContacts.filter((contact) => contact.optedOut).length;
   const charCount = messageBody.length;
   const segmentCount = Math.max(1, Math.ceil(charCount / 160));
   const scheduleInFuture = !!scheduleDate && scheduleDate.getTime() > Date.now();
   const sendDisabled = !messageBody.trim() || selectedContacts.length === 0 || !canSend;
+  const activeControlBatch = safeBatches.find((batch) => batch.status === 'sending' || batch.status === 'paused');
+  const activeSendingProcessed = activeControlBatch
+    ? activeControlBatch.sentCount + activeControlBatch.failedCount
+    : 0;
+  const activeSendingProgress = activeControlBatch && activeControlBatch.recipientCount > 0
+    ? Math.round((activeSendingProcessed / activeControlBatch.recipientCount) * 100)
+    : 0;
+  const customVariables = useMemo(() => settings.customVariables ?? [], [settings.customVariables]);
+
+  useEffect(() => {
+    if (hasLoadedDraftRef.current) return;
+    hasLoadedDraftRef.current = true;
+
+    try {
+      const raw = localStorage.getItem(MESSAGE_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as Partial<MessagesDraft>;
+
+      if (typeof draft.messageBody === 'string') {
+        setMessageBody(draft.messageBody);
+      }
+
+      if (Array.isArray(draft.selectedContactIds)) {
+        const next = draft.selectedContactIds
+          .filter((id): id is number => typeof id === 'number' && Number.isFinite(id));
+        setSelectedContactIds(next);
+      }
+
+      if (Array.isArray(draft.selectedGroupIds)) {
+        const next = draft.selectedGroupIds
+          .filter((id): id is number => typeof id === 'number' && Number.isFinite(id));
+        setSelectedGroupIds(next);
+      }
+
+      if (typeof draft.scheduleDate === 'string' && draft.scheduleDate) {
+        const parsed = new Date(draft.scheduleDate);
+        if (!Number.isNaN(parsed.getTime())) {
+          setScheduleDate(parsed);
+        }
+      }
+
+      if (typeof draft.recurringType === 'string') {
+        setRecurringType(draft.recurringType);
+      }
+      if (typeof draft.showAdvanced === 'boolean') {
+        setShowAdvanced(draft.showAdvanced);
+      }
+    } catch {
+      // Ignore malformed persisted draft.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedDraftRef.current) return;
+
+    const timeout = window.setTimeout(() => {
+      const draft: MessagesDraft = {
+        messageBody,
+        selectedContactIds,
+        selectedGroupIds,
+        scheduleDate: scheduleDate?.toISOString(),
+        recurringType,
+        showAdvanced,
+      };
+      localStorage.setItem(MESSAGE_DRAFT_KEY, JSON.stringify(draft));
+    }, DRAFT_SAVE_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    messageBody,
+    recurringType,
+    scheduleDate,
+    selectedContactIds,
+    selectedGroupIds,
+    showAdvanced,
+  ]);
+
+  useEffect(() => {
+    if (activeContacts.length === 0 && safeGroups.length === 0) return;
+    setSelectedContactIds((previous) => {
+      const valid = new Set(activeContacts.map((contact) => contact.id).filter(Boolean) as number[]);
+      const filtered = previous.filter((id) => valid.has(id));
+      return filtered.length === previous.length ? previous : filtered;
+    });
+    setSelectedGroupIds((previous) => {
+      const valid = new Set(safeGroups.map((group) => group.id).filter(Boolean) as number[]);
+      const filtered = previous.filter((id) => valid.has(id));
+      return filtered.length === previous.length ? previous : filtered;
+    });
+  }, [activeContacts, safeGroups]);
 
   function insertPlaceholder(placeholder: string) {
     setMessageBody((previous) => previous + `{${placeholder}}`);
   }
 
-  function resolveMessage(body: string, contact: Contact): string {
-    return body
+  function resolveMessage(body: string, contact: Contact, variables: CustomVariable[]): string {
+    let resolved = body
       .replace(/\{name\}/gi, contact.name)
       .replace(/\{phone\}/gi, contact.phone)
       .replace(/\{location\}/gi, contact.location || '');
+
+    for (const variable of variables) {
+      const escapedKey = variable.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const tokenRegex = new RegExp(`\\{${escapedKey}\\}`, 'gi');
+      resolved = resolved.replace(tokenRegex, variable.value);
+    }
+
+    return resolved;
   }
 
   async function handleSend() {
@@ -111,7 +258,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
         contactId: contact.id!,
         contactName: contact.name,
         contactPhone: contact.phone,
-        body: resolveMessage(messageBody, contact),
+        body: resolveMessage(messageBody, contact, customVariables),
         status: 'pending' as const,
         retryCount: 0,
         nextRetryAt: undefined,
@@ -121,6 +268,53 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
 
     await processQueueNow();
     clearComposer();
+    localStorage.removeItem(MESSAGE_DRAFT_KEY);
+  }
+
+  async function onPauseCampaign(batchId: number) {
+    setCampaignActionBusy(true);
+    try {
+      await pauseBatch(batchId);
+      toast({ title: 'Campaign paused', description: 'Sending has been paused.' });
+    } catch (error) {
+      toast({
+        title: 'Pause failed',
+        description: error instanceof Error ? error.message : 'Unable to pause campaign.',
+      });
+    } finally {
+      setCampaignActionBusy(false);
+    }
+  }
+
+  async function onResumeCampaign(batchId: number) {
+    setCampaignActionBusy(true);
+    try {
+      await resumeBatch(batchId);
+      await processQueueNow();
+      toast({ title: 'Campaign resumed', description: 'Sending has resumed.' });
+    } catch (error) {
+      toast({
+        title: 'Resume failed',
+        description: error instanceof Error ? error.message : 'Unable to resume campaign.',
+      });
+    } finally {
+      setCampaignActionBusy(false);
+    }
+  }
+
+  async function onStopCampaign(batchId: number) {
+    setCampaignActionBusy(true);
+    try {
+      await stopBatch(batchId);
+      toast({ title: 'Campaign stopped', description: 'Remaining recipients were cancelled.' });
+    } catch (error) {
+      toast({
+        title: 'Stop failed',
+        description: error instanceof Error ? error.message : 'Unable to stop campaign.',
+      });
+    } finally {
+      setCampaignActionBusy(false);
+    }
   }
 
   function clearComposer() {
@@ -129,8 +323,8 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
     setSelectedGroupIds([]);
     setScheduleDate(undefined);
     setRecurringType('none');
-    setShowSchedule(false);
     setShowAdvanced(false);
+    localStorage.removeItem(MESSAGE_DRAFT_KEY);
   }
 
   return (
@@ -173,6 +367,60 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
             {queuedCount} Queued
           </div>
         </div>
+
+        {activeControlBatch && (
+          <div className="mb-6 rounded-2xl border border-border/60 bg-card p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-foreground">
+                {activeControlBatch.status === 'paused' ? 'Campaign paused' : 'Sending in progress'}
+              </p>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {activeSendingProcessed}/{activeControlBatch.recipientCount}
+              </p>
+            </div>
+            <Progress className="h-2" value={activeSendingProgress} />
+            {activeControlBatch && (
+              <div className="mt-3 flex items-center gap-2">
+                {activeControlBatch.status === 'sending' ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-full"
+                    disabled={campaignActionBusy}
+                    onClick={() => void onPauseCampaign(activeControlBatch.id!)}
+                  >
+                    <Pause className="mr-1 h-3.5 w-3.5" />
+                    Pause
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 rounded-full"
+                    disabled={campaignActionBusy}
+                    onClick={() => void onResumeCampaign(activeControlBatch.id!)}
+                  >
+                    <Play className="mr-1 h-3.5 w-3.5" />
+                    Resume
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-full border-destructive/40 text-destructive hover:bg-destructive/10"
+                  disabled={campaignActionBusy}
+                  onClick={() => void onStopCampaign(activeControlBatch.id!)}
+                >
+                  <Square className="mr-1 h-3.5 w-3.5" />
+                  Stop
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Compose Section (E-Commerce Product Card Style) */}
         <div className="bg-card rounded-[32px] p-5 mb-8 shadow-sm border border-border/50">
@@ -230,25 +478,26 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                 <div className="bg-background rounded-[24px] p-5 border border-border/50 space-y-5">
                   
                   {/* Templates */}
-                  {safeTemplates.length > 0 && (
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1">
-                        <Layers className="w-3.5 h-3.5" /> Quick Templates
-                      </p>
-                      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {safeTemplates.map((template) => (
-                          <button
-                            key={template.id}
-                            type="button"
-                            onClick={() => setMessageBody(template.body)}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1">
+                      <Layers className="w-3.5 h-3.5" /> Quick Templates
+                    </p>
+                    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      {quickTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => setMessageBody(template.body)}
                             className="shrink-0 rounded-full bg-secondary px-4 py-2 text-xs font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
-                          >
-                            {template.name}
-                          </button>
-                        ))}
-                      </div>
+                        >
+                          {template.name}
+                        </button>
+                      ))}
+                      {quickTemplates.length === 0 && (
+                        <p className="text-xs text-muted-foreground">No templates yet. Create one on the Templates page.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   {/* Variables */}
                   <div>
@@ -264,7 +513,22 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                           +{placeholder}
                         </button>
                       ))}
+                      {customVariables.map((variable) => (
+                        <button
+                          key={variable.key}
+                          type="button"
+                          onClick={() => insertPlaceholder(variable.key)}
+                          className="rounded-full border border-border bg-transparent px-3 py-1.5 text-[11px] font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+                        >
+                          +{variable.key}
+                        </button>
+                      ))}
                     </div>
+                    {customVariables.length > 0 && (
+                      <p className="mt-2 text-[11px] text-muted-foreground">
+                        Custom variables are managed on the Templates page.
+                      </p>
+                    )}
                   </div>
 
                   {/* Scheduling */}
@@ -312,6 +576,25 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                         </div>
                       </PopoverContent>
                     </Popover>
+                    <div className="mt-3">
+                      <Select value={recurringType} onValueChange={setRecurringType}>
+                        <SelectTrigger className="h-12 rounded-xl border-border bg-transparent">
+                          <SelectValue placeholder="Repeat schedule" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="none">One-time (no repeat)</SelectItem>
+                          <SelectItem value="weekly">Weekly repeat</SelectItem>
+                          <SelectItem value="monthly">Monthly repeat</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {recurringType !== 'none' && (
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          {recurringType === 'weekly'
+                            ? `Will repeat every ${format(scheduleDate || new Date(), 'EEEE')}.`
+                            : `Will repeat on day ${format(scheduleDate || new Date(), 'd')} of every month.`}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                 </div>
@@ -354,7 +637,7 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
           ) : (
             <div className="space-y-3">
               {safeBatches.length === 0 ? (
-                <div className="bg-card rounded-[24px] border border-dashed border-border/80 flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <div className="bg-card rounded-[24px] border border-dashed border-border/80 flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
                     <Send className="h-5 w-5 opacity-50" />
                   </div>
@@ -382,11 +665,28 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                       <label key={group.id} className="flex cursor-pointer items-center gap-4 rounded-2xl p-3 bg-secondary/50 hover:bg-secondary transition-colors">
                         <Checkbox
                           className="w-5 h-5 rounded-md border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                          checked={selectedGroupIds.includes(group.id!)}
+                          checked={selectedGroupIdSet.has(group.id!)}
                           onCheckedChange={(checked) => {
-                            setSelectedGroupIds((previous) =>
-                              checked ? [...previous, group.id!] : previous.filter((id) => id !== group.id!)
-                            );
+                            if (!group.id) return;
+                            setSelectedGroupIds((previous) => {
+                              if (checked) {
+                                if (previous.includes(group.id)) return previous;
+                                return [...previous, group.id];
+                              }
+                              return previous.filter((id) => id !== group.id);
+                            });
+
+                            const groupContactIds = activeContactsByGroupId.get(group.id) || [];
+                            if (groupContactIds.length === 0) return;
+                            setSelectedContactIds((previous) => {
+                              const next = new Set(previous);
+                              if (checked) {
+                                for (const id of groupContactIds) next.add(id);
+                              } else {
+                                for (const id of groupContactIds) next.delete(id);
+                              }
+                              return Array.from(next);
+                            });
                           }}
                         />
                         <div className="h-4 w-4 rounded-full shadow-sm" style={{ backgroundColor: group.color }} />
@@ -403,11 +703,15 @@ export default function MessagesPage({ lang }: MessagesPageProps) {
                   <label key={contact.id} className="flex cursor-pointer items-center gap-4 rounded-2xl p-3 bg-secondary/50 hover:bg-secondary transition-colors">
                     <Checkbox
                       className="w-5 h-5 rounded-md border-muted-foreground/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                      checked={selectedContactIds.includes(contact.id!)}
+                      checked={selectedContactIdSet.has(contact.id!)}
                       onCheckedChange={(checked) => {
-                        setSelectedContactIds((previous) =>
-                          checked ? [...previous, contact.id!] : previous.filter((id) => id !== contact.id!)
-                        );
+                        if (!contact.id) return;
+                        setSelectedContactIds((previous) => {
+                          const next = new Set(previous);
+                          if (checked) next.add(contact.id);
+                          else next.delete(contact.id);
+                          return Array.from(next);
+                        });
                       }}
                     />
                     <div className="min-w-0 flex-1">
@@ -442,6 +746,8 @@ function BatchRow({ batch, lang }: { batch: MessageBatch; lang: string }) {
   const statusColors: Record<string, string> = {
     completed: 'bg-success/20 text-success-foreground',
     sending: 'bg-primary/20 text-primary-foreground',
+    paused: 'bg-warning/20 text-warning-foreground',
+    cancelled: 'bg-destructive/20 text-destructive',
     pending: 'bg-secondary text-secondary-foreground',
     scheduled: 'bg-warning/20 text-warning-foreground',
   };

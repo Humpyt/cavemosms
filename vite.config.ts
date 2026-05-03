@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-icon-512.png", "pwa-icon-192.png"],
       manifest: {
-        name: "Camo SMS - Bulk Message Sender",
-        short_name: "Camo SMS",
+        name: "Cavo SMS - Bulk Message Sender",
+        short_name: "Cavo SMS",
         description: "Send bulk SMS messages to your contacts with scheduling, templates, and analytics.",
         theme_color: "#1a1a2e",
         background_color: "#1a1a2e",

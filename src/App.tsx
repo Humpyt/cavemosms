@@ -18,6 +18,9 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { motion, AnimatePresence } from 'framer-motion';
 import SmsStatusBadge from '@/components/SmsStatusBadge';
 import LicenseGate from '@/components/LicenseGate';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
+import { Progress } from '@/components/ui/progress';
 
 const queryClient = new QueryClient();
 const ONBOARDING_KEY = 'bulksms_onboarding_done';
@@ -46,6 +49,10 @@ function AppContent() {
       notifyAppReady();
     }
   }, [loading, license.state]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [activeTab]);
 
   function completeOnboarding() {
     setShowOnboarding(false);
@@ -93,21 +100,19 @@ function AppContent() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Camo SMS
+                    Cavo SMS
                   </p>
-                  <h1 className="text-base font-display font-semibold text-foreground dark:text-slate-50">
-                    Native Campaign Console
-                  </h1>
                   {license.identity?.email && (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">{license.identity.email}</p>
                   )}
                 </div>
                 <SmsStatusBadge />
               </div>
+              <HeaderSendProgress />
             </div>
           </header>
 
-          <main className="flex-1">
+          <main className="flex-1 pb-32">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -128,13 +133,42 @@ function AppContent() {
               </motion.div>
             </AnimatePresence>
           </main>
-
-          <BottomNav activeTab={activeTab} onTabChange={setActiveTab} lang={lang} />
         </div>
+
+        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} lang={lang} />
+
         <PWAInstallPrompt />
         <OnboardingWalkthrough open={showOnboarding} onComplete={completeOnboarding} />
       </div>
     </NativeSmsProvider>
+  );
+}
+
+function HeaderSendProgress() {
+  const batches = useLiveQuery(
+    () => db.batches.orderBy('createdAt').reverse().limit(20).toArray(),
+    []
+  );
+  const activeSendingBatch = (batches ?? []).find((batch) => batch.status === 'sending');
+
+  if (!activeSendingBatch || activeSendingBatch.recipientCount <= 0) {
+    return null;
+  }
+
+  const processed = activeSendingBatch.sentCount + activeSendingBatch.failedCount;
+  const progress = Math.max(
+    0,
+    Math.min(100, Math.round((processed / activeSendingBatch.recipientCount) * 100))
+  );
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
+        <span>Sending in progress</span>
+        <span>{processed}/{activeSendingBatch.recipientCount}</span>
+      </div>
+      <Progress className="h-1.5" value={progress} />
+    </div>
   );
 }
 

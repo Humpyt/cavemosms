@@ -15,7 +15,7 @@ public class NativeSmsQueueWorker extends Worker {
     @Override
     public Result doWork() {
         try {
-            NativeSmsQueueScheduler.processDueQueue(getApplicationContext(), 100);
+            NativeSmsQueueScheduler.processDueQueue(getApplicationContext(), 1);
             return Result.success();
         } catch (Exception exception) {
             return Result.retry();

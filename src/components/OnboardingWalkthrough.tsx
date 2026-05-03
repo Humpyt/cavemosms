@@ -126,7 +126,7 @@ export default function OnboardingWalkthrough({ open, onComplete }: OnboardingWa
                 <div className="space-y-5">
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-primary/90">
                     <img src="/logo.png" className="h-3.5 w-3.5 object-contain" alt="Logo" />
-                    Camo SMS
+                    Cavo SMS
                   </div>
 
                   <div className="space-y-3">

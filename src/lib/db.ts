@@ -71,6 +71,40 @@ db.version(3)
     });
   });
 
+db.version(4)
+  .stores({
+    contacts: '++id, name, phone, *tags, *groupIds, optedOut',
+    groups: '++id, name',
+    templates: '++id, name',
+    batches: '++id, status, scheduledAt, createdAt',
+    messageLogs: '++id, batchId, contactId, status, nativeRequestId, retryCount, nextRetryAt, lastAttemptAt',
+    settings: '++id',
+  })
+  .upgrade(async (tx) => {
+    await tx.table('contacts').clear();
+    await tx.table('groups').clear();
+    await tx.table('templates').clear();
+    await tx.table('batches').clear();
+    await tx.table('messageLogs').clear();
+  });
+
+db.version(5)
+  .stores({
+    contacts: '++id, name, phone, *tags, *groupIds, optedOut',
+    groups: '++id, name',
+    templates: '++id, name',
+    batches: '++id, status, scheduledAt, createdAt',
+    messageLogs: '++id, batchId, contactId, status, nativeRequestId, retryCount, nextRetryAt, lastAttemptAt',
+    settings: '++id',
+  })
+  .upgrade(async (tx) => {
+    await tx.table('settings').toCollection().modify((settings: Record<string, unknown>) => {
+      if (settings.customVariables === undefined) {
+        settings.customVariables = [];
+      }
+    });
+  });
+
 function getDefaultSettings(): AppSettings {
   return {
     language: 'en',
@@ -78,6 +112,7 @@ function getDefaultSettings(): AppSettings {
     sendDelay: 2000,
     maxRetries: 2,
     preferredSubscriptionId: null,
+    customVariables: [],
   };
 }
 

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.bulksms.groupmessage',
-  appName: 'Camo SMS',
+  appName: 'Cavo SMS',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

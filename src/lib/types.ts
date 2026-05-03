@@ -33,7 +33,7 @@ export interface MessageBatch {
   recipientCount: number;
   sentCount: number;
   failedCount: number;
-  status: 'pending' | 'sending' | 'completed' | 'scheduled';
+  status: 'pending' | 'sending' | 'completed' | 'scheduled' | 'paused' | 'cancelled';
   scheduledAt?: Date;
   recurringType?: 'none' | 'daily' | 'weekly' | 'monthly';
   createdAt: Date;
@@ -92,6 +92,7 @@ export interface AppSettings {
   sendDelay: number; // ms between messages
   maxRetries: number;
   preferredSubscriptionId: number | null;
+  customVariables?: Array<{ key: string; value: string }>;
 }
 
 export type TabId = 'messages' | 'contacts' | 'templates' | 'analytics' | 'settings';

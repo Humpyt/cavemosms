@@ -34,7 +34,7 @@ import { normalizePhone, parseContactsFromCsv, type GroupCsvContact } from '@/li
 import { t } from '@/lib/i18n';
 import { GROUP_COLORS } from '@/lib/types';
 import type { Contact, Group } from '@/lib/types';
-import { addContactsToGroup, removeContactFromGroup as removeContactFromGroupService } from '@/services/groupMembership';
+import { addContactsToGroup } from '@/services/groupMembership';
 
 interface ContactsPageProps {
   lang: string;
@@ -58,7 +58,9 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
   const [groupColor, setGroupColor] = useState(GROUP_COLORS[0]);
   const [groupContactsDialogOpen, setGroupContactsDialogOpen] = useState(false);
   const [groupCsvDialogOpen, setGroupCsvDialogOpen] = useState(false);
-  const [groupMembersDialogOpen, setGroupMembersDialogOpen] = useState(false);
+  const [groupDeleteDialogOpen, setGroupDeleteDialogOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [groupContactSearch, setGroupContactSearch] = useState('');
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
@@ -191,11 +193,6 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
     setGroupCsvDialogOpen(true);
   }
 
-  function openGroupMembers(group: Group) {
-    setSelectedGroup(group);
-    setGroupMembersDialogOpen(true);
-  }
-
   async function addSelectedContactsToGroup() {
     if (!selectedGroup?.id || selectedContactIds.length === 0) return;
 
@@ -256,10 +253,6 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
     setGroupCsvDialogOpen(false);
   }
 
-  async function removeContactFromGroup(contactId: number, groupId: number) {
-    await removeContactFromGroupService(contactId, groupId);
-  }
-
   const selectableContacts = useMemo(() => {
     if (!selectedGroup?.id) return [];
     return contacts.filter(
@@ -269,11 +262,6 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
           contact.phone.includes(groupContactSearch))
     );
   }, [contacts, groupContactSearch, selectedGroup]);
-
-  const selectedGroupMembers = useMemo(() => {
-    if (!selectedGroup?.id) return [];
-    return contacts.filter((contact) => contact.groupIds.includes(selectedGroup.id!));
-  }, [contacts, selectedGroup]);
 
   async function saveGroup() {
     if (editingGroup) {
@@ -291,6 +279,27 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
 
     for (const contact of contactsInGroup) {
       await db.contacts.update(contact.id!, { groupIds: contact.groupIds.filter((groupId) => groupId !== id) });
+    }
+  }
+
+  function openDeleteGroupDialog(group: Group) {
+    setGroupToDelete(group);
+    setGroupDeleteDialogOpen(true);
+  }
+
+  async function confirmDeleteGroup() {
+    if (!groupToDelete?.id || deletingGroup) return;
+    setDeletingGroup(true);
+    try {
+      await deleteGroup(groupToDelete.id);
+      toast({
+        title: 'Group deleted',
+        description: `${groupToDelete.name} was deleted.`,
+      });
+      setGroupDeleteDialogOpen(false);
+      setGroupToDelete(null);
+    } finally {
+      setDeletingGroup(false);
     }
   }
 
@@ -547,7 +556,7 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                           </button>
                           <button
                             className="w-10 h-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
-                            onClick={() => deleteGroup(group.id!)}
+                            onClick={() => openDeleteGroupDialog(group)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -747,12 +756,11 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
                       event.target.value = '';
                     }}
                   />
-                  <textarea
-                    value={groupCsvText}
-                    onChange={(event) => setGroupCsvText(event.target.value)}
-                    placeholder="name,phone,location,tags&#10;John,+254700000001,Nairobi,lead;vip"
-                    className="min-h-[180px] w-full rounded-xl border border-input bg-background px-3 py-2 text-xs"
-                  />
+                  {groupCsvText && (
+                    <p className="text-xs text-muted-foreground">
+                      File loaded. {groupCsvText.split('\n').filter(Boolean).length} lines detected.
+                    </p>
+                  )}
                   <Button onClick={parseGroupCsv} disabled={!groupCsvText.trim()}>
                     Parse CSV
                   </Button>
@@ -792,67 +800,44 @@ export default function ContactsPage({ lang }: ContactsPageProps) {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={groupMembersDialogOpen} onOpenChange={setGroupMembersDialogOpen}>
-          <DialogContent className="max-w-[95vw] sm:max-w-lg">
+        <Dialog
+          open={groupDeleteDialogOpen}
+          onOpenChange={(open) => {
+            if (!deletingGroup) {
+              setGroupDeleteDialogOpen(open);
+              if (!open) setGroupToDelete(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-[95vw] sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle className="font-display">
-                Manage {selectedGroup?.name || 'group'} members
-              </DialogTitle>
+              <DialogTitle className="font-display">Delete group?</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="h-[320px] rounded-lg border">
-              <div className="space-y-1.5 p-2">
-                {selectedGroupMembers.length === 0 ? (
-                  <p className="px-2 py-8 text-center text-xs text-muted-foreground">No members in this group yet.</p>
-                ) : (
-                  selectedGroupMembers.map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-2.5 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{contact.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{contact.phone}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
-                        onClick={() => selectedGroup?.id && void removeContactFromGroup(contact.id!, selectedGroup.id)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+            <p className="text-sm text-muted-foreground">
+              {groupToDelete
+                ? `Delete "${groupToDelete.name}"? Contacts will remain, but they will be removed from this group.`
+                : 'Delete this group?'}
+            </p>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setGroupDeleteDialogOpen(false);
+                  setGroupToDelete(null);
+                }}
+                disabled={deletingGroup}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteGroup} disabled={deletingGroup}>
+                {deletingGroup ? 'Deleting...' : 'Delete Group'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
         <ImportContactsDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} lang={lang} />
       </div>
     </PullToRefresh>
-  );
-}
-
-function StatPill({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string;
-  value: number;
-  tone?: 'default' | 'warning';
-}) {
-  const toneClass =
-    tone === 'warning'
-      ? 'border-warning/20 bg-warning/10 text-warning'
-      : 'border-border bg-muted text-foreground';
-
-  return (
-    <div className={`rounded-2xl border px-3 py-2 ${toneClass}`}>
-      <p className="text-[10px] uppercase tracking-[0.18em] text-current/80">{label}</p>
-      <p className="mt-1 font-display text-xl font-semibold">{value}</p>
-    </div>
   );
 }
